@@ -8,10 +8,10 @@ export default function Users() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getUsers()
+    handleGetAllUsers()
   }, [])
 
-  const getUsers = async () => {
+  const handleGetAllUsers = async () => {
     try {
       const res = await axios.get('http://localhost:8888/users')
       setUsers(res.data)
@@ -20,6 +20,17 @@ export default function Users() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleCreateUsers = async (req, res) => {
+    try {
+      await axios.post('http://localhost:8888/users')
+    } catch (error) {
+
+    } finally {
+
+    }
+
   }
 
   if (loading) return <p>Loading ...</p>
