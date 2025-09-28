@@ -1,61 +1,118 @@
-import { Link } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { api } from "../api";              // <— dùng instance
+import InputField from "../components/InputField";
 
 function Login() {
+  const [form, setForm] = useState({ username: "", password: "" });
+  const [toast, setToast] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();          // <— bạn đang gọi navigate nhưng chưa khai báo
+
+  const handleChange = (e) => {
+    const { id, value } = e.target;
+    setForm((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const showToast = (type, msg) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  useEffect(() => {
+    const has = (name) =>
+      document.cookie.split("; ").some((c) => c.trim().startsWith(`${name}=1`));
+    const clear = (name) => (document.cookie = `${name}=; Max-Age=0; path=/`);
+
+    if (has("justVerified")) { showToast("success", "Your account are verified"); clear("justVerified"); }
+    if (has("verifyExpired")) { showToast("error", "Verification link expired. Please resend a new link."); clear("verifyExpired"); }
+    if (has("verifyInvalid")) { showToast("error", "Invalid verification link."); clear("verifyInvalid"); }
+    if (has("alreadyVerified")) { showToast("success", "Your account is already verified. Please login your account"); clear("alreadyVerified"); }
+  }, [location.pathname]);
+
+  const handleLogin = async () => {
+    try {
+      const resp = await api.post("/login", {    // <— gọi đúng baseURL
+        username: form.username,
+        password: form.password
+      });
+
+      showToast("success", "Login success");
+      navigate("/");                              // <— điều hướng sau khi login
+    } catch (err) {
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.message;
+
+      if (status === 403) {
+        showToast("error", "You must verify your account before login");
+        return;
+      }
+      if (status === 404 || status === 405 || status === 500) {
+        showToast("error", msg || `Login failed (${status})`);
+        return;
+      }
+      // CORS / network
+      if (err?.message?.includes("Network Error")) {
+        showToast("error", "Network/CORS error. Check API URL & CORS settings.");
+        return;
+      }
+      showToast("error", msg || "Login failed");
+    }
+  };
+
   return (
-    <div className='relative flex flex-col w-screen h-screen justify-center items-center'>
+    <div className="relative flex flex-col w-screen h-screen justify-center items-center">
+      {/* Toast nho nhỏ */}
+      {toast && (
+        <div
+          className={`fixed top-4 right-4 px-4 py-2 rounded shadow text-white ${
+            toast.type === "success" ? "bg-green-600" : "bg-red-600"
+          }`}
+        >
+          {toast.msg}
+        </div>
+      )}
+
       <h1 className="absolute top-[10px] left-[10px] font-bold text-2xl">2NDEV</h1>
-      <div className='flex flex-col w-[500px] h-[500px] shadow p-[20px]'>
-        <h1 className='text-2xl font-semibold mt-[50px]'>Login or sign up </h1>
+      <div className="flex flex-col w-[500px] h-[500px] shadow p-[20px]">
+        <h1 className="text-2xl font-semibold mt-[50px]">Login or sign up </h1>
 
-        <div className='flex flex-col mt-[80px] space-y-[20px]'>
+        <div className="flex flex-col mt-[80px] space-y-[20px]">
+          <InputField
+            id="username"
+            label="Username"
+            type="text"
+            value={form.username}
+            onChange={handleChange}
+          />
 
-          <div className="relative w-full">
-            <input
-              type="text"
-              id="username"
-              placeholder=""
-              className="peer w-full border border-gray-300 rounded-full px-3 py-2 focus:outline-none focus:ring focus:ring-blue-400"
-            />
-            <label
-              htmlFor="username"
-              className="absolute left-3 top-2 text-gray-500 transition-all 
-               peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:text-base
-               peer-focus:-top-3 peer-focus:left-2 peer-focus:text-sm peer-focus:text-blue-500 bg-white px-1"
-            >
-              Username
-            </label>
-          </div>
+          <InputField
+            id="password"
+            label="Password"
+            type="password"
+            value={form.password}
+            onChange={handleChange}
+          />
 
-          <div className="relative w-full">
-            <input
-              type="text"
-              id="password"
-              placeholder=""
-              className="peer w-full border border-gray-300 rounded-full px-3 py-2 focus:outline-none focus:ring focus:ring-blue-400"
-            />
+          <button
+            type="button"
+            onClick={handleLogin}
+            className="flex mx-auto text-2xl cursor-pointer font-semibold w-[400px] h-[40px] mt-[20px] rounded-full bg-black justify-center items-center hover:scale-110 transition-transform duration-300"
+          >
+            <p className="text-white">Login</p>
+          </button>
 
-            <label
-              htmlFor="password"
-              className="absolute left-3 top-2 text-gray-500 transition-all 
-               peer-placeholder-shown:top-2 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:text-base
-               peer-focus:-top-3 peer-focus:left-2 peer-focus:text-sm peer-focus:text-blue-500 bg-white px-1"
-            >
-              Password
-            </label>
-          </div>
+          <p className="text-xs mx-auto cursor-pointer hover:scale-110 transition-transform duration-300">
+            Don't have an account ?
+          </p>
 
-          <div className="flex mx-auto text-2xl cursor-pointer font-semibold w-[400px] h-[40px] mt-[20px] rounded-full bg-black justify-center items-center hover:scale-110 transition-transform duration-300">
-            <p className="text-white">Login</p> 
-          </div>
-
-          <p className="text-xs mx-auto cursor-pointer hover:scale-110 transition-transform duration-300">Don't have an account ? </p>
-
-          <Link to = {'/register'} className="mx-auto cursor-pointer hover:underline">Creat a new account ! </Link>
-
+          <Link to={"/register"} className="mx-auto cursor-pointer hover:underline">
+            Creat a new account !
+          </Link>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Login
+export default Login;

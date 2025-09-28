@@ -4,7 +4,7 @@ import { CircleArrowLeft } from 'lucide-react';
 import InputField from '../components/InputField';
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 function Register() {
     const navigate = useNavigate()
     const [form, setForm] = useState({ email: '', username: '', password: '' })
