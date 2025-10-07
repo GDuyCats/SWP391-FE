@@ -61,7 +61,9 @@ function Login() {
   };
 
   return (
-    <div className="relative flex flex-col w-screen h-screen justify-center items-center">
+    <div className="relative flex flex-col w-screen h-screen justify-center items-center bg-cover bg-center bg-no-repeat"
+    style={{ backgroundImage: "url('/BackGroundimg.jpg')" }}>
+      
       {/* Toast nho nhỏ */}
       {toast && (
         <div
@@ -74,10 +76,11 @@ function Login() {
       )}
 
       <h1 className="absolute top-[10px] left-[10px] font-bold text-2xl">2NDEV</h1>
+      
       <div className="flex flex-col w-[500px] h-[500px] shadow p-[20px]">
-        <h1 className="text-2xl font-semibold mt-[50px]">Login or sign up </h1>
+        <h1 className="text-2xl font-semibold mt-[50px] text-white text-center">Login</h1>
 
-        <div className="flex flex-col mt-[80px] space-y-[20px]">
+        <div className="flex flex-col mt-[60px] space-y-[20px]">
           <InputField
             id="username"
             label="Username"
@@ -97,17 +100,17 @@ function Login() {
           <button
             type="button"
             onClick={handleLogin}
-            className="flex mx-auto text-2xl cursor-pointer font-semibold w-[400px] h-[40px] mt-[20px] rounded-full bg-black justify-center items-center hover:scale-110 transition-transform duration-300"
+            className="flex mx-auto text-2xl cursor-pointer font-semibold w-[400px] h-[40px] mt-[20px] rounded-full bg-[#38d142] justify-center items-center hover:scale-110 transition-transform duration-300"
           >
             <p className="text-white">Login</p>
           </button>
 
-          <p className="text-xs mx-auto cursor-pointer hover:scale-110 transition-transform duration-300">
+          <p className="text-xs mx-auto cursor-pointer hover:scale-110 transition-transform duration-300 text-white">
             Don't have an account ?
           </p>
 
-          <Link to={"/register"} className="mx-auto cursor-pointer hover:underline">
-            Creat a new account !
+          <Link to={"/register"} className="mx-auto cursor-pointer hover:underline text-white">
+            Create a new account !
           </Link>
         </div>
       </div>

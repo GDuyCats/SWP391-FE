@@ -93,7 +93,8 @@ function Register() {
   const isDisabled = loading || cooldownLeft > 0;
 
   return (
-    <div className='relative flex flex-col w-screen h-screen justify-center items-center'>
+    <div className='relative flex flex-col w-screen h-screen justify-center items-center bg-cover bg-center bg-no-repeat'
+      style={{ backgroundImage: "url('/bgRegister.jpg')" }}>
       {/* Toast + animation: in từ trái -> phải, out từ phải -> trái */}
       {toast && (
         <div
@@ -108,17 +109,19 @@ function Register() {
         </div>
       )}
 
+      <div>
+        <Link
+          to={'/login'}
+          className="absolute top-[10px] right-[20px] font-semibold text-xl flex items-center gap-[10px] cursor-pointer hover:scale-110 transition-transform duration-300 text-white"
+        >
+          <CircleArrowLeft />
+          Back to login
+        </Link>
+      </div>
 
-      <Link
-        to={'/login'}
-        className="absolute top-[10px] left-[20px] font-semibold text-xl flex items-center gap-[10px] cursor-pointer hover:scale-110 transition-transform duration-300"
-      >
-        <CircleArrowLeft />
-        Back to login
-      </Link>
 
-      <div className='flex flex-col w-[500px] h-[500px] shadow p-[20px]'>
-        <h1 className='text-2xl font-semibold mt-[50px]'>Create a new account</h1>
+      <div className='flex flex-col w-[700px] h-[500px] shadow px-[80px] py-[40px] bg-white/10'>
+        <h1 className='text-2xl font-semibold mt-[50px] text-white'>Create a new account</h1>
 
         <div className='flex flex-col mt-[80px] space-y-[20px]'>
 
