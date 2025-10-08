@@ -93,8 +93,7 @@ function Register() {
   const isDisabled = loading || cooldownLeft > 0;
 
   return (
-    <div className='relative flex flex-col w-screen h-screen justify-center items-center bg-cover bg-center bg-no-repeat'
-      style={{ backgroundImage: "url('/bgRegister.jpg')" }}>
+    <div className='relative flex flex-col w-screen h-screen justify-center items-center bg-cover bg-center'>
       {/* Toast + animation: in từ trái -> phải, out từ phải -> trái */}
       {toast && (
         <div
@@ -112,7 +111,7 @@ function Register() {
       <div>
         <Link
           to={'/login'}
-          className="absolute top-[10px] right-[20px] font-semibold text-xl flex items-center gap-[10px] cursor-pointer hover:scale-110 transition-transform duration-300 text-white"
+          className="absolute top-[10px] right-[20px] font-semibold text-xl flex items-center gap-[10px] cursor-pointer hover:scale-110 transition-transform duration-300 text-black"
         >
           <CircleArrowLeft />
           Back to login
@@ -120,8 +119,8 @@ function Register() {
       </div>
 
 
-      <div className='flex flex-col w-[700px] h-[500px] shadow px-[80px] py-[40px] bg-white/10'>
-        <h1 className='text-2xl font-semibold mt-[50px] text-white'>Create a new account</h1>
+      <div className='flex flex-col w-[500px] h-[700px] shadow-2xl px-[80px] py-[40px] bg-white/10 text-center'>
+        <h1 className='text-2xl font-semibold mt-[50px] text-black'>Create a new account</h1>
 
         <div className='flex flex-col mt-[80px] space-y-[20px]'>
 
@@ -144,12 +143,12 @@ function Register() {
             type="button"
             onClick={handleRegisterOrResend}
             disabled={isDisabled}
-            className={`flex mx-auto text-2xl font-semibold w-[400px] h-[40px] mt-[20px]
+            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex mx-auto text-2xl font-semibold w-[400px] h-[40px] mt-[110px]
                         rounded-full justify-center items-center transition-transform duration-300
                         ${isDisabled ? 'bg-gray-400 cursor-not-allowed opacity-60'
                 : 'bg-black hover:scale-110 cursor-pointer'}`}
           >
-            <p className="text-white">
+            <p className="text-white text-center">
               {loading
                 ? 'Processing...'
                 : cooldownLeft > 0
