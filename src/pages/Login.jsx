@@ -61,23 +61,35 @@ function Login() {
   };
 
   return (
-    <div className="relative flex flex-col w-screen h-screen justify-center items-center">
+    <div className="relative flex flex-col w-screen h-screen justify-center items-center bg-cover bg-center">
+
       {/* Toast nho nhỏ */}
       {toast && (
         <div
-          className={`fixed top-4 right-4 px-4 py-2 rounded shadow text-white ${
-            toast.type === "success" ? "bg-green-600" : "bg-red-600"
-          }`}
+          className={`fixed top-4 right-4 px-4 py-2 rounded shadow text-white ${toast.type === "success" ? "bg-green-600" : "bg-red-600"
+            }`}
         >
           {toast.msg}
         </div>
       )}
 
-      <h1 className="absolute top-[10px] left-[10px] font-bold text-2xl">2NDEV</h1>
-      <div className="flex flex-col w-[500px] h-[500px] shadow p-[20px]">
-        <h1 className="text-2xl font-semibold mt-[50px]">Login or sign up </h1>
+     
 
-        <div className="flex flex-col mt-[80px] space-y-[20px]">
+      <Link
+        to="/"
+        className="w-50 h-50 hover:scale-110 transition-transform duration-300 ease-in-out block"
+      >
+        <img
+          src="/logo.jpg"
+          alt="LogoWeb"
+          className="w-full h-full object-contain"
+        />
+      </Link>
+
+      <div className="flex flex-col w-[500px] h-[600px] shadow-2xl p-[20px]">
+        <h1 className="text-2xl font-semibold mt-[50px] text-black text-center">Login</h1>
+
+        <div className="flex flex-col mt-[60px] space-y-[20px]">
           <InputField
             id="username"
             label="Username"
@@ -102,12 +114,12 @@ function Login() {
             <p className="text-white">Login</p>
           </button>
 
-          <p className="text-xs mx-auto cursor-pointer hover:scale-110 transition-transform duration-300">
+          <p className="text-xs mx-auto cursor-pointer hover:scale-110 transition-transform duration-300 text-black">
             Don't have an account ?
           </p>
 
-          <Link to={"/register"} className="mx-auto cursor-pointer hover:underline">
-            Creat a new account !
+          <Link to={"/register"} className="mx-auto cursor-pointer hover:underline text-black">
+            Create a new account !
           </Link>
         </div>
       </div>
