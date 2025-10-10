@@ -7,6 +7,7 @@ import Home from "./pages/Home"
 import ListingBattery from "./pages/Listing/ListingBattery"
 import ListingEV from "./pages/Listing/ListingEV"
 import ChooseListing from "./pages/Listing/ChooseListing"
+import ListingStep2 from "./pages/Listing/ListingStep2"
 import Confirmation from "./pages/Confirmation"
 import Success from "./pages/Success"
 function App() {
@@ -20,6 +21,7 @@ function App() {
         <Route path="/chooselisting" element={<ChooseListing />} />
         <Route path="/listing/ev" element={<ListingEV />} />
         <Route path="/listing/pin" element={<ListingBattery />} />
+        <Route path="/listing/step2" element={<ListingStep2 />} />
         <Route path="/confirmation" element={<Confirmation />} />
         <Route path="/success" element={<Success />} />
         <Route path='*' element={<NotFound />} />
