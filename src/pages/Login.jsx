@@ -7,7 +7,7 @@ function Login() {
   const [form, setForm] = useState({ username: "", password: "" });
   const [toast, setToast] = useState(null);
   const location = useLocation();
-  const navigate = useNavigate();          // <— bạn đang gọi navigate nhưng chưa khai báo
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -38,7 +38,7 @@ function Login() {
       });
 
       showToast("success", "Login success");
-      navigate("/");                              // <— điều hướng sau khi login
+      navigate("/");
     } catch (err) {
       const status = err?.response?.status;
       const msg = err?.response?.data?.message;
@@ -51,7 +51,6 @@ function Login() {
         showToast("error", msg || `Login failed (${status})`);
         return;
       }
-      // CORS / network
       if (err?.message?.includes("Network Error")) {
         showToast("error", "Network/CORS error. Check API URL & CORS settings.");
         return;
@@ -61,75 +60,50 @@ function Login() {
   };
 
   return (
-    <div className="relative flex flex-col w-screen h-screen justify-center items-center bg-cover bg-center bg-no-repeat"
-    style={{ backgroundImage: "url('/BackGroundimg.jpg')" }}>
-      
-      {/* Toast nho nhỏ */}
+    <div
+      className="relative flex flex-col w-screen h-screen justify-center items-center bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url('/BackGroundimg.jpg')" }}
+    >
+      {/* Toast */}
       {toast && (
         <div
-          className={`fixed top-4 right-4 px-4 py-2 rounded shadow text-white ${toast.type === "success" ? "bg-green-600" : "bg-red-600"
-            }`}
+          className={`fixed top-4 right-4 px-4 py-2 rounded shadow text-white ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}
         >
           {toast.msg}
         </div>
       )}
 
-     
-
       <Link
         to="/"
-        className="w-50 h-50 hover:scale-110 transition-transform duration-300 ease-in-out block"
+        className="w-50 h-50 hover:scale-110 transition-transform duration-300 ease-in-out block mb-4"
       >
-        <img
-          src="/logo.jpg"
-          alt="LogoWeb"
-          className="w-full h-full object-contain"
-        />
+        <img src="/logo.jpg" alt="LogoWeb" className="w-full h-full object-contain" />
       </Link>
 
-      <div className="flex flex-col w-[500px] h-[600px] shadow-2xl p-[20px]">
-        <h1 className="text-2xl font-semibold mt-[50px] text-black text-center">Login</h1>
-      <h1 className="absolute top-[10px] left-[10px] font-bold text-2xl">2NDEV</h1>
-      
-      <div className="flex flex-col w-[500px] h-[500px] shadow p-[20px]">
-        <h1 className="text-2xl font-semibold mt-[50px] text-white text-center">Login</h1>
+      <div className="flex flex-col w-[500px] h-[600px] shadow-2xl p-[20px] bg-white/5 rounded">
+        <h1 className="text-2xl font-semibold mt-[10px] text-black text-center">Login</h1>
+        <h1 className="absolute top-[10px] left-[10px] font-bold text-2xl">2NDEV</h1>
 
-        <div className="flex flex-col mt-[60px] space-y-[20px]">
-        <div className="flex flex-col mt-[60px] space-y-[20px]">
-          <InputField
-            id="username"
-            label="Username"
-            type="text"
-            value={form.username}
-            onChange={handleChange}
-          />
+        <div className="flex flex-col w-[460px] h-[420px] shadow p-[20px] mt-6 mx-auto bg-transparent">
+          <h1 className="text-2xl font-semibold text-white text-center">Login</h1>
 
-          <InputField
-            id="password"
-            label="Password"
-            type="password"
-            value={form.password}
-            onChange={handleChange}
-          />
+          <div className="flex flex-col mt-[30px] space-y-[20px]">
+            <InputField id="username" label="Username" type="text" value={form.username} onChange={handleChange} />
 
-          <button
-            type="button"
-            onClick={handleLogin}
-            className="flex mx-auto text-2xl cursor-pointer font-semibold w-[400px] h-[40px] mt-[20px] rounded-full bg-[#38d142] justify-center items-center hover:scale-110 transition-transform duration-300"
-          >
-            <p className="text-white">Login</p>
-          </button>
+            <InputField id="password" label="Password" type="password" value={form.password} onChange={handleChange} />
 
-          <p className="text-xs mx-auto cursor-pointer hover:scale-110 transition-transform duration-300 text-black">
-          <p className="text-xs mx-auto cursor-pointer hover:scale-110 transition-transform duration-300 text-white">
-            Don't have an account ?
-          </p>
+            <button
+              type="button"
+              onClick={handleLogin}
+              className="flex mx-auto text-xl cursor-pointer font-semibold w-[400px] h-[40px] mt-[20px] rounded-full bg-[#38d142] justify-center items-center hover:scale-110 transition-transform duration-300"
+            >
+              <p className="text-white">Login</p>
+            </button>
 
-          <Link to={"/register"} className="mx-auto cursor-pointer hover:underline text-black">
-            Create a new account !
-          <Link to={"/register"} className="mx-auto cursor-pointer hover:underline text-white">
-            Create a new account !
-          </Link>
+            <p className="text-xs mx-auto cursor-pointer hover:scale-110 transition-transform duration-300 text-white">Don't have an account ?</p>
+
+            <Link to="/register" className="mx-auto cursor-pointer hover:underline text-white">Create a new account !</Link>
+          </div>
         </div>
       </div>
     </div>
