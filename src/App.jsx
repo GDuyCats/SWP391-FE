@@ -10,6 +10,8 @@ import ChooseListing from "./pages/Listing/ChooseListing"
 import ListingStep2 from "./pages/Listing/ListingStep2"
 import Confirmation from "./pages/Confirmation"
 import Success from "./pages/Success"
+import RequestBuyCar from "./pages/RequestBuyCar"
+import AdminApprove from "./pages/AdminApprove"
 function App() {
   return (
     <BrowserRouter>
@@ -25,6 +27,8 @@ function App() {
         <Route path="/confirmation" element={<Confirmation />} />
         <Route path="/success" element={<Success />} />
         <Route path='*' element={<NotFound />} />
+        <Route path="/requestbuycar" element = {<RequestBuyCar/>}/>
+        <Route path="/adminapprove" element = {<AdminApprove/>}/>
       </Routes>
     </BrowserRouter>
   )
