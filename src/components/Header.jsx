@@ -1,9 +1,42 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
 
 const Header = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    // Check if user is logged in
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+
+    // Listen for login events
+    const handleLogin = () => {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        setUser(JSON.parse(userData));
+      }
+    };
+
+    window.addEventListener("userLogin", handleLogin);
+    window.addEventListener("userLogout", handleLogin);
+
+    return () => {
+      window.removeEventListener("userLogin", handleLogin);
+      window.removeEventListener("userLogout", handleLogin);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("accessToken");
+    setUser(null);
+    window.dispatchEvent(new Event("userLogout"));
+    navigate("/");
+  };
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -55,24 +88,48 @@ const Header = () => {
           <div className="flex items-center space-x-4">
             {/* Desktop User Actions */}
             <div className="hidden md:flex items-center space-x-4">
-              <button
-                onClick={() => navigate("/login")}
-                className="text-gray-900 hover:text-gray-600 px-3 py-2 text-sm font-medium transition-colors"
-              >
-                Đăng nhập
-              </button>
-              <button
-                onClick={() => navigate("/register")}
-                className="bg-gray-900 text-white hover:bg-gray-800 px-4 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Đăng ký
-              </button>
-              <button
-                onClick={() => navigate("/chooselisting")}
-                className="bg-gray-900 text-white hover:bg-gray-800 px-4 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Đăng bài
-              </button>
+              {user ? (
+                // Show username and logout when logged in
+                <>
+                  <span className="text-gray-900 px-3 py-2 text-sm font-medium">
+                    Xin chào, <span className="font-bold">{user.username}</span>
+                  </span>
+                  <button
+                    onClick={() => navigate("/chooselisting")}
+                    className="bg-gray-900 text-white hover:bg-gray-800 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Đăng bài
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="text-gray-900 hover:text-gray-600 px-3 py-2 text-sm font-medium transition-colors"
+                  >
+                    Đăng xuất
+                  </button>
+                </>
+              ) : (
+                // Show login/register when not logged in
+                <>
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="text-gray-900 hover:text-gray-600 px-3 py-2 text-sm font-medium transition-colors"
+                  >
+                    Đăng nhập
+                  </button>
+                  <button
+                    onClick={() => navigate("/register")}
+                    className="bg-gray-900 text-white hover:bg-gray-800 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Đăng ký
+                  </button>
+                  <button
+                    onClick={() => navigate("/chooselisting")}
+                    className="bg-gray-900 text-white hover:bg-gray-800 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Đăng bài
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Mobile menu button */}
