@@ -6,6 +6,9 @@ import Register from "./pages/Register"
 import Home from "./pages/Home"
 import RequestBuyCar from "./pages/RequestBuyCar"
 import AdminApprove from "./pages/AdminApprove"
+import PostType from "./pages/PostType"
+import ContractA from "./pages/ContractA"
+import ContractB from "./pages/ContractB"
 function App() {
   return (
     <BrowserRouter>
@@ -17,6 +20,9 @@ function App() {
         <Route path = '*' element = {<NotFound/>}/>
         <Route path="/requestbuycar" element = {<RequestBuyCar/>}/>
         <Route path="/adminapprove" element = {<AdminApprove/>}/>
+        <Route path="/posttype" element = {<PostType/>}/>
+        <Route path="/contractA" element = {<ContractA/>}/>
+        <Route path="/contractB" element = {<ContractB/>}/>
       </Routes>
     </BrowserRouter>
   )
