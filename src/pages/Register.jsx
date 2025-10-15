@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Mail, User, Lock, CheckCircle, XCircle } from 'lucide-react';
+import { Link } from "react-router-dom";
+import { CircleArrowLeft } from "lucide-react";
+import InputField from "../components/InputField";
+import { api } from "../services/api";
 
 const COOLDOWN_SEC = 60;
 
 function Register() {
-  const [form, setForm] = useState({ email: '', username: '', password: '' });
+  const [form, setForm] = useState({ email: "", username: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
@@ -19,9 +23,9 @@ function Register() {
 
   const showToast = (type, msg, duration = 3000) => {
     setToast({ type, msg });
-    setToastVisible(true);
+    setToastVisible(true); // slide in
     setTimeout(() => {
-      setToastVisible(false);
+      setToastVisible(false); // slide out
       setTimeout(() => setToast(null), 400);
     }, duration);
   };
@@ -41,17 +45,64 @@ function Register() {
       setLoading(true);
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       if (!hasActiveVerifyToken) {
-        setHasActiveVerifyToken(true);
-        showToast('success', 'Vui lòng xác thực tài khoản qua email của bạn.');
-        setCooldownLeft(COOLDOWN_SEC);
+        // Đăng ký lần đầu - sử dụng API instance
+        const resp = await api.post("/register", {
+          username: form.username,
+          email: form.email,
+          password: form.password,
+        });
+
+        // Xử lý response theo API documentation
+        if (resp.status === 201) {
+          setHasActiveVerifyToken(true);
+          showToast(
+            "success",
+            resp.data.message || "Please verify your account with your email."
+          );
+          setCooldownLeft(COOLDOWN_SEC); // bắt đầu cooldown
+        }
       } else {
-        showToast('success', 'Email xác thực đã được gửi lại. Vui lòng kiểm tra hộp thư.');
-        setCooldownLeft(COOLDOWN_SEC);
+        // Resend verification (server kiểm tra token/rate-limit)
+        const resp = await api.post("/resend-verify", { email: form.email });
+        showToast(
+          "success",
+          resp?.data?.message ||
+          "Verification email resent. Please check your inbox."
+        );
+        setCooldownLeft(COOLDOWN_SEC); // bắt đầu cooldown cho resend
       }
     } catch (error) {
-      showToast('error', 'Đã có lỗi xảy ra. Vui lòng thử lại.');
+      const status = error?.response?.status;
+      const msg = error?.response?.data?.message;
+
+      if (status === 400 && msg === "Email is already verified") {
+        showToast(
+          "success",
+          "Your account is already verified. Please login your account."
+        );
+      } else if (
+        status === 400 &&
+        msg?.startsWith?.("Missing required field")
+      ) {
+        showToast("error", msg);
+      } else if (status === 409) {
+        showToast("error", "Email already exists");
+      } else if (status === 429) {
+        showToast(
+          "error",
+          msg || "Please wait a bit before requesting another email."
+        );
+      } else if (error?.message?.includes?.("Network Error")) {
+        showToast("error", "Network/CORS error. Check API URL & CORS.");
+      } else {
+        showToast(
+          "error",
+          msg || (hasActiveVerifyToken ? "Resend failed" : "Register failed")
+        );
+      }
+      // lỗi thì KHÔNG kích hoạt cooldown
     } finally {
       setLoading(false);
     }
@@ -60,14 +111,19 @@ function Register() {
   const isDisabled = loading || cooldownLeft > 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      {/* Toast */}
+    <div className="relative flex flex-col w-screen h-screen justify-center items-center bg-cover bg-center">
+      {/* Toast + animation: in từ trái -> phải, out từ phải -> trái */}
       {toast && (
         <div
-          className={`fixed top-6 right-6 px-5 py-3 rounded-xl shadow-lg text-white flex items-center gap-3
-            transition-all duration-300 transform z-50
-            ${toastVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
-            ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}
+          className={`
+      fixed top-4 right-4 px-4 py-2 rounded shadow text-white
+      transition-all duration-500 transform
+      ${toastVisible
+              ? "translate-x-0 opacity-100"
+              : "translate-x-full opacity-0"
+            }
+      ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}
+    `}
         >
           {toast.type === 'success' ? (
             <CheckCircle className="w-5 h-5" />
@@ -78,133 +134,66 @@ function Register() {
         </div>
       )}
 
-      {/* Main Container */}
-      <div className="w-full max-w-md">
-        {/* Back Button */}
-        <a 
-          href="/login"
-          className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
+      <div>
+        <Link
+          to={"/login"}
+          className="absolute top-[10px] right-[20px] font-semibold text-xl flex items-center gap-[10px] cursor-pointer hover:scale-110 transition-transform duration-300 text-black"
         >
           <ArrowLeft className="w-5 h-5" />
           <span className="font-medium">Quay lại đăng nhập</span>
-        </a>
+        </Link>
 
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <a
-              href="/"
-              className="w-30 h-30 hover:scale-110 transition-transform duration-300 ease-in-out block"
-            >
-              <img
-                src="/logo.jpg"
-                alt="LogoWeb"
-                className="w-full h-full object-contain"
-              />
-            </a>
-          </div>
-
-          {/* Title */}
-          <h1 className="text-2xl font-bold text-gray-800 text-center mb-2">
-            Tạo tài khoản mới
+        <div className="flex flex-col w-[500px] h-[700px] shadow-2xl px-[80px] py-[40px] bg-white/10 text-center">
+          <h1 className="text-2xl font-semibold mt-[50px] text-black">
+            Create a new account
           </h1>
-          <p className="text-gray-500 text-center mb-8">
-            Điền thông tin bên dưới để đăng ký
-          </p>
 
-          {/* Form */}
-          <div className="space-y-5">
-            {/* Email Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  id="email"
-                  type="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder="email@example.com"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl
-                    focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100
-                    transition-all"
-                />
-              </div>
-            </div>
+          <div className="flex flex-col mt-[80px] space-y-[20px]">
+            <InputField
+              id="email"
+              label="Email"
+              type="text"
+              value={form.email}
+              onChange={handleChange}
+            />
 
-            {/* Username Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tên người dùng
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  id="username"
-                  type="text"
-                  value={form.username}
-                  onChange={handleChange}
-                  placeholder="Nhập tên người dùng"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl
-                    focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100
-                    transition-all"
-                />
-              </div>
-            </div>
+            <InputField
+              id="username"
+              label="Username"
+              type="text"
+              value={form.username}
+              onChange={handleChange}
+            />
 
-            {/* Password Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Mật khẩu
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  id="password"
-                  type="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  placeholder="Nhập mật khẩu"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl
-                    focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100
-                    transition-all"
-                />
-              </div>
-            </div>
+            <InputField
+              id="password"
+              label="Password"
+              type="password"
+              value={form.password}
+              onChange={handleChange}
+            />
 
-            {/* Submit Button */}
             <button
               type="button"
               onClick={handleRegisterOrResend}
               disabled={isDisabled}
-              className={`w-full py-3 rounded-xl font-semibold text-white
-                transition-all duration-200 cursor-pointer
-                ${isDisabled 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-blue-500 hover:bg-blue-600 active:scale-95'
+              className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex mx-auto text-2xl font-semibold w-[400px] h-[40px] mt-[110px]
+                        rounded-full justify-center items-center transition-transform duration-300
+                        ${isDisabled
+                  ? "bg-gray-400 cursor-not-allowed opacity-60"
+                  : "bg-black hover:scale-110 cursor-pointer"
                 }`}
             >
-              {loading
-                ? 'Đang xử lý...'
-                : cooldownLeft > 0
-                  ? `Gửi lại sau ${cooldownLeft}s`
-                  : hasActiveVerifyToken 
-                    ? 'Gửi lại email xác thực' 
-                    : 'Tiếp tục'}
+              <p className="text-white text-center">
+                {loading
+                  ? "Processing..."
+                  : cooldownLeft > 0
+                    ? `Resend in ${cooldownLeft}s`
+                    : hasActiveVerifyToken
+                      ? "Resend verification email"
+                      : "Continue"}
+              </p>
             </button>
-          </div>
-
-          {/* Footer */}
-          <div className="mt-6 text-center">
-            <p className="text-gray-600">
-              Đã có tài khoản?{' '}
-              <span className="text-blue-500 font-semibold cursor-pointer hover:underline">
-                Đăng nhập
-              </span>
-            </p>
           </div>
         </div>
       </div>
