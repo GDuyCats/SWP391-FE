@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
+import UserDropdown from "./UserMenu/UserDropdown";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -91,9 +92,7 @@ const Header = () => {
               {user ? (
                 // Show username and logout when logged in
                 <>
-                  <span className="text-gray-900 px-3 py-2 text-sm font-medium">
-                    Xin chào, <span className="font-bold">{user.username}</span>
-                  </span>
+                  <UserDropdown username={user.username} />
                   <button
                     onClick={() => navigate("/chooselisting")}
                     className="bg-gray-900 text-white hover:bg-gray-800 px-4 py-2 rounded-md text-sm font-medium transition-colors"
