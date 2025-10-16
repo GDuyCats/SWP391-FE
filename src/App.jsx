@@ -6,6 +6,9 @@ import Register from "./pages/Register";
 import Home from "./pages/Home";
 import ListingBattery from "./pages/Listing/ListingBattery";
 import ListingEV from "./pages/Listing/ListingEV";
+import CarDetails from "./pages/Listing/CarDetails";
+import AdminHome from "./pages/Admin/Home";
+import Cars from "./pages/Cars";
 import ChooseListing from "./pages/Listing/ChooseListing";
 import ListingStep2 from "./pages/Listing/ListingStep2";
 import Confirmation from "./pages/Confirmation";
@@ -24,6 +27,9 @@ function App() {
         <Route path="/users" element={<Users />} />
         <Route path="/chooselisting" element={<ChooseListing />} />
         <Route path="/listing/ev" element={<ListingEV />} />
+    <Route path="/listing/ev/:id" element={<CarDetails />} />
+  <Route path="/cars" element={<Cars />} />
+  <Route path="/admin" element={<AdminHome />} />
         <Route path="/listing/pin" element={<ListingBattery />} />
         <Route path="/listing/step2" element={<ListingStep2 />} />
         <Route path="/confirmation" element={<Confirmation />} />

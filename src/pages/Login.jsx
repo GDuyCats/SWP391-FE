@@ -66,7 +66,13 @@ function Login() {
       }
 
       showToast("success", resp.data.message || "Login success");
-      navigate("/");
+      // Redirect based on role: admin -> /admin, others -> /
+      const role = resp?.data?.user?.role;
+      if (role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       const status = err?.response?.status;
       const msg = err?.response?.data?.message;
