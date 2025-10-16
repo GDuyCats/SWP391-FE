@@ -30,7 +30,7 @@ function App() {
     <Route path="/listing/ev/:id" element={<CarDetails />} />
   <Route path="/cars" element={<Cars />} />
   <Route path="/admin" element={<AdminHome />} />
-        <Route path="/listing/pin" element={<ListingBattery />} />
+        <Route path="/listing/step1" element={<ListingBattery />} />
         <Route path="/listing/step2" element={<ListingStep2 />} />
         <Route path="/confirmation" element={<Confirmation />} />
         <Route path="/success" element={<Success />} />
