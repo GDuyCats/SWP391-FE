@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { SquareUserRound } from 'lucide-react';
 import EditButton from '../components/EditButton';
-import { api } from '../api'; // axios instance
+import { api } from '../services/api';
 
 function Profile() {
     const [profile, setProfile] = useState(null);

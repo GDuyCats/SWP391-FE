@@ -15,26 +15,37 @@ import AdminApprove from "./pages/AdminApprove"
 import PostType from "./pages/PostType"
 import ContractA from "./pages/ContractA"
 import ContractB from "./pages/ContractB"
+import Profile from "./pages/Profile"
+import About from "./pages/About"
+import Contact from "./pages/Contact"
+import Layout from "./components/Layout"
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route element={<Layout />}>
+          <Route path="/" element={<Home />} />
+
+          <Route path="/users" element={<Users />} />
+          <Route path="/chooselisting" element={<ChooseListing />} />
+          <Route path="/listing/ev" element={<ListingEV />} />
+          <Route path="/listing/pin" element={<ListingBattery />} />
+          <Route path="/listing/step2" element={<ListingStep2 />} />
+          <Route path="/confirmation" element={<Confirmation />} />
+          <Route path="/success" element={<Success />} />
+          <Route path='*' element={<NotFound />} />
+          <Route path="/requestbuycar" element={<RequestBuyCar />} />
+          <Route path="/adminapprove" element={<AdminApprove />} />
+          <Route path="/posttype" element={<PostType />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/about" element={<About />} />
+        </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/users" element={<Users />} />
-        <Route path="/chooselisting" element={<ChooseListing />} />
-        <Route path="/listing/ev" element={<ListingEV />} />
-        <Route path="/listing/pin" element={<ListingBattery />} />
-        <Route path="/listing/step2" element={<ListingStep2 />} />
-        <Route path="/confirmation" element={<Confirmation />} />
-        <Route path="/success" element={<Success />} />
-        <Route path='*' element={<NotFound />} />
-        <Route path="/requestbuycar" element = {<RequestBuyCar/>}/>
-        <Route path="/adminapprove" element = {<AdminApprove/>}/>
-        <Route path="/posttype" element = {<PostType/>}/>
-        <Route path="/contractA" element = {<ContractA/>}/>
-        <Route path="/contractB" element = {<ContractB/>}/>
+        <Route path="/contractA" element={<ContractA />} />
+        <Route path="/contractB" element={<ContractB />} />
+
       </Routes>
     </BrowserRouter>
   )

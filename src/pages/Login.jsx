@@ -51,10 +51,14 @@ function Login() {
   const handleLogin = async () => {
     try {
       const resp = await api.post("/login", {
+
         // <— gọi đúng baseURL
         username: form.username,
         password: form.password,
       });
+
+      console.log(resp);
+      
 
       // Store user data and access token from response
       if (resp.data.user && resp.data.user.accessToken) {

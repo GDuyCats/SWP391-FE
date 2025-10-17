@@ -1,6 +1,20 @@
-import React from "react";
+import React, { useState } from "react";
+import { api } from "../services/api";
+
+
 
 const AdminApprove = () => {
+
+  const [id, setId] = useState(0);
+  const handleChange = async () => {
+    try {
+      const resp = await api.patch(`/${id}/verify`)
+      console.log(resp)
+    } catch (error) {
+      console.log(error)
+    }
+
+  }
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
 
@@ -103,7 +117,9 @@ const AdminApprove = () => {
                 </span>
               </td>
               <td className="p-3 border-b text-center space-x-2">
-                <button className="bg-gray-300 text-white px-4 py-2 rounded-full cursor-not-allowed">
+                <button className="bg-gray-300 text-white px-4 py-2 rounded-full cursor-not-allowed"
+                onClick={handleChange}>
+                  
                   Duyệt
                 </button>
                 <button className="bg-gray-300 text-white px-4 py-2 rounded-full cursor-not-allowed">

@@ -92,7 +92,7 @@ const Header = () => {
                 // Show username and logout when logged in
                 <>
                   <span className="text-gray-900 px-3 py-2 text-sm font-medium">
-                    Xin chào, <span className="font-bold">{user.username}</span>
+                    Xin chào, <span className="font-bold cursor-pointer" onClick={() => navigate("/profile")}>{user.username}</span>
                   </span>
                   <button
                     onClick={() => navigate("/chooselisting")}

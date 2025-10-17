@@ -9,14 +9,14 @@ import Footer from "../components/Footer";
 function Home() {
   return (
     <div className="min-h-screen bg-white">
-      <Header />
+
       <main>
         <Hero />
         <Features />
         <CarListing />
         <News />
       </main>
-      <Footer />
+
     </div>
   );
 }
