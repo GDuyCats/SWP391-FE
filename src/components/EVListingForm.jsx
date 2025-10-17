@@ -108,7 +108,7 @@ export default function EVListingForm() {
   };
 
   return (
-    <div className="bg-gradient-to-b from-slate-800 to-slate-900 min-h-screen text-white flex flex-col items-center py-10 px-6">
+    <div className="bg-gradient-to-b from-white-800 to-gray-300 min-h-screen text-black flex flex-col items-center py-10 px-6">
       <div className="w-full max-w-5xl bg-white/10 p-8 rounded-2xl shadow-lg border border-slate-700">
         {/* Header */}
         <h1 className="text-2xl font-semibold mb-6 text-center">Tạo Tin Đăng Xe Điện</h1>
