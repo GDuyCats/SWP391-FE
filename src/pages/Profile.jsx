@@ -6,128 +6,164 @@ import { api } from "../services/api";
 import { SquareUserRound } from "lucide-react";
 
 function Profile() {
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [form, setForm] = useState({ email: "", phone: "" });
 
-    return (
-        <div>
-            <div className="bg-[#3da642] py-10 px-5 rounded-3xl w-150 mx-auto">
-                <h1 className="text-2xl text-white text-center font-extrabold">Profile Details</h1>
-            </div>
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+          setError("Bạn chưa đăng nhập.");
+          setLoading(false);
+          return;
+        }
+        const res = await api.post(
+          "/profile",
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const user = res.data?.user || null;
+        setProfile(user);
+        setForm({ email: user?.email || "", phone: user?.phone || "" });
+      } catch (e) {
+        setError("Không thể tải thông tin hồ sơ.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
 
-            <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between mt-7">
-                    <div>
-                        <p className="font-bold">My Profile</p>
-                        <p className="font-light text-{10px}">You can change your profile details here seamlessly</p>
-                    </div>
+  return (
+    <div className="min-h-screen bg-white">
+      <Header />
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">Thông tin cá nhân</h1>
 
+        {loading && <div className="text-gray-600">Đang tải...</div>}
 
-                    <EditButton />
+        {!loading && error && <div className="text-red-600">{error}</div>}
 
-
-
+        {!loading && !error && profile && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center">
+                <SquareUserRound className="w-16 h-16" />
+                <div className="ml-4">
+                  <p className="text-sm text-gray-500">Tài khoản</p>
+                  <p className="text-lg font-semibold">{profile.username}</p>
                 </div>
               </div>
               <EditButton onClick={() => setIsEditing(true)} />
             </div>
-
-            <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between mt-15 items-center">
-                    <div className="flex items-center">
-                        <SquareUserRound className='w-20 h-20 text-[#3da642]' />
-                        <p className="ml-5">Account Name</p>
-                    </div>
-
-                    <EditButton />
-
+            {!isEditing ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Email</p>
+                  <p className="font-medium break-all">
+                    {profile.email || "—"}
+                  </p>
                 </div>
-
-            </div>
-
-            <div className="max-w-7xl mx-auto">
-                <div className="mt-15">
-                    <p className="font-bold">Personal Information</p>
+                <div>
+                  <p className="text-sm text-gray-500">Số điện thoại</p>
+                  <p className="font-medium">{profile.phone || "—"}</p>
                 </div>
-
-                <div className="flex justify-between">
-                    <div className="mt-8 flex flex-col">
-                        <div className="flex gap-40">
-                            <div>
-                                <p>First Name</p>
-                                <p className="font-thin">Tien</p>
-                            </div>
-
-                            <div>
-                                <p>Last Name</p>
-                                <p className="font-thin">Nguyen Ba Minh</p>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-17.5 mt-8">
-                            <div>
-                                <p>Email Address</p>
-                                <p className="font-thin">nguyentien@gmail.com</p>
-                            </div>
-                            <div>
-                                <p>Phone</p>
-                                <p className="font-thin">0123456789</p>
-                            </div>
-                        </div>
-                        <div>
-                            <p className="mt-8">Bio</p>
-                            <p className="font-thin">Reputation makes the brand</p>
-                        </div>
-
-
-                    </div>
-
-                    <EditButton />
+                <div>
+                  <p className="text-sm text-gray-500">Trạng thái</p>
+                  <p className="font-medium">
+                    {profile.isVerify ? "Đã xác minh" : "Chưa xác minh"}
+                  </p>
                 </div>
-
-            </div>
-
-
-            <div className="max-w-7xl mx-auto">
-                <div className="mt-10">
-                    <p className="font-bold">Address</p>
+              </div>
+            ) : (
+              <form
+                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  try {
+                    const token = localStorage.getItem("accessToken");
+                    await api.patch(
+                      "/profile/update",
+                      { email: form.email || null, phone: form.phone || null },
+                      { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    setProfile({
+                      ...profile,
+                      email: form.email,
+                      phone: form.phone,
+                    });
+                    setIsEditing(false);
+                  } catch (err) {
+                    alert("Cập nhật thất bại. Vui lòng thử lại.");
+                  }
+                }}
+              >
+                <div>
+                  <label className="block text-sm text-gray-500 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) =>
+                      setForm({ ...form, email: e.target.value })
+                    }
+                    className="w-full border rounded-md px-3 py-2"
+                    placeholder="name@example.com"
+                  />
                 </div>
-
-                <div className="flex justify-between">
-                    <div className="mt-8 flex flex-col">
-                        <div className="flex gap-40">
-                            <div>
-                                <p>Region</p>
-                                <p className="font-thin">VietNam</p>
-                            </div>
-
-                            <div>
-                                <p>City</p>
-                                <p className="font-thin">Ho Chi Minh</p>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-17.5 mt-8">
-                            <div>
-                                <p>Posted Code</p>
-                                <p className="font-thin">70000</p>
-                            </div>
-
-                        </div>
-                    </div>
-
-                    <EditButton />
+                <div>
+                  <label className="block text-sm text-gray-500 mb-1">
+                    Số điện thoại
+                  </label>
+                  <input
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) =>
+                      setForm({ ...form, phone: e.target.value })
+                    }
+                    className="w-full border rounded-md px-3 py-2"
+                    placeholder="0123456789"
+                  />
                 </div>
-
-            </div>
-
-
-        </div>
-
-
-    );
-
+                <div className="md:col-span-2 flex gap-3 mt-2">
+                  <button
+                    type="submit"
+                    className="bg-gray-900 text-white px-4 py-2 rounded-md"
+                  >
+                    Lưu
+                  </button>
+                  <button
+                    type="button"
+                    className="px-4 py-2 rounded-md border"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setForm({
+                        email: profile.email || "",
+                        phone: profile.phone || "",
+                      });
+                    }}
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+      </main>
+      <Footer />
+    </div>
+  );
 }
 
-export default Profile
+export default Profile;
 
 
 // const MainPage = () => {
