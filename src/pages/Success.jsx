@@ -1,9 +1,9 @@
-import TransactionSuccess from "../components/TransactionSuccess";
+import PostSuccess from "../components/PostSuccess";
 
 function Success() {
   return (
     <div className="min-h-screen bg-white">
-      <TransactionSuccess />
+      <PostSuccess />
     </div>
   );
 }

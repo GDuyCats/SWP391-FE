@@ -19,6 +19,10 @@ import Profile from "./pages/Profile"
 import About from "./pages/About"
 import Contact from "./pages/Contact"
 import Layout from "./components/Layout"
+import CarDetails from "./pages/Listing/CarDetails";
+import AdminHome from "./pages/Admin/Home";
+import Cars from "./pages/Cars";
+import Membership from "./pages/Membership/Membership";
 function App() {
   return (
     <BrowserRouter>
@@ -29,6 +33,8 @@ function App() {
           <Route path="/users" element={<Users />} />
           <Route path="/chooselisting" element={<ChooseListing />} />
           <Route path="/listing/ev" element={<ListingEV />} />
+          <Route path="/listing/ev/:id" element={<CarDetails />} />
+          <Route path="/cars" element={<Cars />} />
           <Route path="/listing/pin" element={<ListingBattery />} />
           <Route path="/listing/step2" element={<ListingStep2 />} />
           <Route path="/confirmation" element={<Confirmation />} />
@@ -41,14 +47,15 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<About />} />
         </Route>
+        <Route path="/membership" element={<Membership />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/contractA" element={<ContractA />} />
         <Route path="/contractB" element={<ContractB />} />
-
+        <Route path="/admin" element={<AdminHome />} />
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

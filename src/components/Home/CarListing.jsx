@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const CarListing = () => {
   const cars = [
@@ -126,11 +127,13 @@ const CarListing = () => {
                 </div>
 
                 <div className="flex space-x-3">
-                  <button className="flex-1 bg-gray-900 text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors font-medium">
-                    Xem chi tiết
-                  </button>
+                  <Link to={`/listing/ev/${car.id}`} state={{ car }} className="flex-1">
+                    <button className="w-full bg-gray-900 text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors font-medium">
+                      Xem chi tiết
+                    </button>
+                  </Link>
                   <button className="flex-1 border border-gray-300 text-gray-900 py-2 px-4 rounded-md hover:bg-gray-50 transition-colors font-medium">
-                    Liên hệ
+                    Gửi yêu cầu mua xe
                   </button>
                 </div>
               </div>
