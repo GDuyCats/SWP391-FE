@@ -28,12 +28,12 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/" element={<Home />} />
 
+          <Route path="/" element={<Home />} />
           <Route path="/users" element={<Users />} />
           <Route path="/chooselisting" element={<ChooseListing />} />
           <Route path="/listing/ev" element={<ListingEV />} />
-          <Route path="/listing/ev/:id" element={<CarDetails />} />
+
           <Route path="/cars" element={<Cars />} />
           <Route path="/listing/pin" element={<ListingBattery />} />
           <Route path="/listing/step2" element={<ListingStep2 />} />
@@ -41,18 +41,20 @@ function App() {
           <Route path="/success" element={<Success />} />
           <Route path='*' element={<NotFound />} />
           <Route path="/requestbuycar" element={<RequestBuyCar />} />
-          <Route path="/adminapprove" element={<AdminApprove />} />
+
           <Route path="/posttype" element={<PostType />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<About />} />
         </Route>
+        <Route path="/listing/ev/:id" element={<CarDetails />} />
         <Route path="/membership" element={<Membership />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/contractA" element={<ContractA />} />
         <Route path="/contractB" element={<ContractB />} />
         <Route path="/admin" element={<AdminHome />} />
+        <Route path="/adminapprove" element={<AdminApprove />} />
       </Routes>
     </BrowserRouter>
   );
