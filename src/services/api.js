@@ -69,3 +69,13 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export const verifyOtp = async (contractId, code) => {
+  try {
+    const res = await api.post("/api/verify-otp", { contractId, code });
+    return { success: true, message: res.data.message };
+  } catch (error) {
+    console.error("Lỗi verify OTP:", error.response?.data || error.message);
+    return { success: false, message: error.response?.data?.message || "Lỗi xác thực OTP" };
+  }
+};

@@ -23,6 +23,8 @@ import CarDetails from "./pages/Listing/CarDetails";
 import AdminHome from "./pages/Admin/Home";
 import Cars from "./pages/Cars";
 import Membership from "./pages/Membership/Membership";
+import PaymentSuccessfully from "./pages/PaymentSuccessfully"
+import PaymentFails from "./pages/PaymentFails"
 function App() {
   return (
     <BrowserRouter>
@@ -55,6 +57,8 @@ function App() {
         <Route path="/contractB" element={<ContractB />} />
         <Route path="/admin" element={<AdminHome />} />
         <Route path="/adminapprove" element={<AdminApprove />} />
+        <Route path="/paymentsuccessfully" element={<PaymentSuccessfully />} />
+        <Route path="/paymentfails" element={<PaymentFails />} />
       </Routes>
     </BrowserRouter>
   );

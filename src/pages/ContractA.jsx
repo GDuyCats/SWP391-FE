@@ -120,7 +120,7 @@ function ContractA() {
                     hover:from-blue-600 hover:to-indigo-700
                     transform hover:scale-[1.02] active:scale-[0.98]
                     transition-all duration-200 shadow-lg hover:shadow-xl
-                    flex items-center justify-center gap-2 group"
+                    flex items-center justify-center gap-2 group cursor-pointer"
                 >
                   Xác nhận và gửi OTP
                   <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
