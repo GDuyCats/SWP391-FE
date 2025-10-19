@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../services/api";
+import Toast from "../components/Toast";
 
 const AdminApprove = () => {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [toast, setToast] = useState(false);
+  const [type, setType] = useState("");
+  const [msg, setMessage] = useState("");
 
   const [filters, setFilters] = useState({
     search: '',
@@ -26,11 +30,11 @@ const AdminApprove = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const resp = await api.get('/all', { 
-        params: filters 
+
+      const resp = await api.get('/all', {
+        params: filters
       });
-      
+
       if (resp.data && resp.data.data && Array.isArray(resp.data.data)) {
         setPosts(resp.data.data);
       } else if (Array.isArray(resp.data)) {
@@ -39,15 +43,15 @@ const AdminApprove = () => {
         setPosts([]);
         setError('Cấu trúc dữ liệu không như mong đợi');
       }
-      
+
     } catch (error) {
       console.error('Lỗi khi lấy dữ liệu:', error);
-      
+
       if (error.response?.status === 401) {
         const errorMsg = error.response?.data?.message || '';
-        
-        if (errorMsg.toLowerCase().includes('token') || 
-            errorMsg.toLowerCase().includes('unauthorized')) {
+
+        if (errorMsg.toLowerCase().includes('token') ||
+          errorMsg.toLowerCase().includes('unauthorized')) {
           setError('Phiên đăng nhập hết hạn. Đang chuyển đến trang đăng nhập...');
           setTimeout(() => {
             localStorage.removeItem('token');
@@ -57,12 +61,12 @@ const AdminApprove = () => {
           return;
         }
       }
-      
+
       if (error.response?.status === 403) {
         setError('Bạn không có quyền truy cập. Vui lòng đăng nhập với tài khoản Admin/Staff.');
         return;
       }
-      
+
       if (error.response) {
         setError(`Lỗi ${error.response.status}: ${error.response.data?.message || error.response.statusText || 'Không thể tải dữ liệu'}`);
       } else if (error.request) {
@@ -92,40 +96,47 @@ const AdminApprove = () => {
       const resp = await api.patch(`/${postId}/verify`, {
         verifyStatus: "verify"
       });
-      
-      alert('Duyệt bài thành công!');
-      
-      setPosts(prev => prev.map(post => 
-        post.id === postId 
-          ? { ...post, verifyStatus: 'verify' } 
-          : post
-      ));
-      
+
+      if (resp.status === 200) {
+        setToast(true)
+        setType("success")
+        setMessage(resp.data.message)
+
+      }
+
     } catch (error) {
       console.error('Lỗi khi verify bài:', error);
-      
+      const status = error?.response?.status;
+      const msg = error?.response?.data?.message;
+
       let errorMsg = 'Không thể duyệt bài đăng';
-      
-      if (error.response?.status === 400) {
-        errorMsg = 'Lỗi 400: verifyStatus không hợp lệ';
-      } else if (error.response?.status === 403) {
-        errorMsg = 'Lỗi 403: Bạn không có quyền duyệt bài';
-      } else if (error.response?.status === 404) {
-        errorMsg = 'Lỗi 404: Không tìm thấy bài đăng';
-      } else if (error.response?.status === 401) {
-        errorMsg = 'Lỗi 401: Phiên đăng nhập hết hạn';
+
+      setToast(true)
+      setType("error")
+
+
+      if (status === 400) {
+        errorMsg = msg ? msg : 'Lỗi 400: verifyStatus không hợp lệ';
+
+      } else if (status === 403) {
+        errorMsg = msg ? msg : 'Lỗi 403: Người dùng không có quyền duyệt bài';
+      } else if (status === 404) {
+        errorMsg = msg ? msg : 'Lỗi 404: Không tìm thấy bài đăng';
+      } else if (status === 500) {
+        errorMsg = msg ? msg : 'Lỗi 500: Lỗi server nội bộ';
         setTimeout(() => navigate('/login'), 2000);
-      } else if (error.response?.data?.message) {
-        errorMsg = error.response.data.message;
       }
-      
-      alert(errorMsg);
+
+      setMessage(errorMsg);
+    } finally {
+      setTimeout(() => setToast(false), 3000);
     }
+
   };
 
   const renderStatus = (post) => {
     const isVerified = post.verifyStatus === 'verify';
-    
+
     if (isVerified) {
       return (
         <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
@@ -153,14 +164,14 @@ const AdminApprove = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      
+
       <header className="bg-blue-800 text-white px-6 py-4 text-2xl font-semibold rounded-b-2xl shadow-md">
         QUẢN LÝ PHÊ DUYỆT
       </header>
 
       {/* Bộ lọc */}
       <div className="bg-white shadow-lg rounded-2xl p-6 m-6">
-        
+
         <div className="grid grid-cols-4 gap-4 mb-4">
           <input
             name="search"
@@ -169,7 +180,7 @@ const AdminApprove = () => {
             className="border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
             placeholder="Tìm theo tiêu đề..."
           />
-          <select 
+          <select
             name="status"
             value={filters.status}
             onChange={handleFilterChange}
@@ -198,7 +209,7 @@ const AdminApprove = () => {
         </div>
 
         <div className="grid grid-cols-4 gap-4">
-          <select 
+          <select
             name="type"
             value={filters.type}
             onChange={handleFilterChange}
@@ -222,7 +233,7 @@ const AdminApprove = () => {
             className="border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
             placeholder="Người đăng"
           />
-          <button 
+          <button
             onClick={handleSearch}
             className="bg-blue-600 text-white py-2 rounded-full hover:bg-blue-700 shadow-md transition cursor-pointer"
           >
@@ -241,7 +252,7 @@ const AdminApprove = () => {
         ) : error ? (
           <div className="flex flex-col justify-center items-center h-64 p-4">
             <p className="text-red-500 text-lg mb-4 text-center">{error}</p>
-            <button 
+            <button
               onClick={fetchPosts}
               className="bg-blue-500 text-white px-6 py-2 rounded-full hover:bg-blue-600 cursor-pointer"
             >
@@ -285,14 +296,14 @@ const AdminApprove = () => {
                   </td>
                   <td className="p-3 border-b text-center">
                     {!isVerified(post) ? (
-                      <button 
+                      <button
                         onClick={() => handleVerify(post.id)}
                         className="bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600 shadow-sm transition cursor-pointer"
                       >
                         Duyệt
                       </button>
                     ) : (
-                      <button 
+                      <button
                         disabled
                         className="bg-gray-300 text-white px-4 py-2 rounded-full cursor-not-allowed"
                       >
@@ -306,7 +317,9 @@ const AdminApprove = () => {
           </table>
         )}
       </div>
-
+      {toast && (
+        <Toast type={type} msg={msg} />
+      )}
     </div>
   );
 };

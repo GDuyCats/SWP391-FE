@@ -36,7 +36,7 @@ function App() {
           <Route path="/chooselisting" element={<ChooseListing />} />
           <Route path="/listing/ev" element={<ListingEV />} />
 
-          <Route path="/cars" element={<Cars />} />
+          
           <Route path="/listing/pin" element={<ListingBattery />} />
           <Route path="/listing/step2" element={<ListingStep2 />} />
           <Route path="/confirmation" element={<Confirmation />} />
@@ -59,6 +59,7 @@ function App() {
         <Route path="/adminapprove" element={<AdminApprove />} />
         <Route path="/paymentsuccessfully" element={<PaymentSuccessfully />} />
         <Route path="/paymentfails" element={<PaymentFails />} />
+        <Route path="/cars" element={<Cars />} />
       </Routes>
     </BrowserRouter>
   );
