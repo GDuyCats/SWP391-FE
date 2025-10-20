@@ -94,7 +94,7 @@ const Header = () => {
                 <>
                   <UserDropdown username={user.username} />
                   <button
-                    onClick={() => navigate("/listing/step1")}
+                    onClick={() => navigate("/chooselisting")}
                     className="bg-gray-900 text-white hover:bg-gray-800 px-4 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Đăng bài
@@ -122,7 +122,7 @@ const Header = () => {
                     Đăng ký
                   </button>
                   <button
-                    onClick={() => navigate("/listing/step1")}
+                    onClick={() => navigate("/chooselisting")}
                     className="bg-gray-900 text-white hover:bg-gray-800 px-4 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Đăng bài
