@@ -1,10 +1,11 @@
-import EVListingForm from "../../components/EVListingForm"
+import EVForm from "../../components/EVForm";
 
 function ListingEV() {
   return (
     <div className="page listing-ev-page">
-      <EVListingForm />
+      <EVForm />
     </div>
   );
 }
+
 export default ListingEV;

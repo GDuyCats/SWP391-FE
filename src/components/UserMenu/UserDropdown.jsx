@@ -38,12 +38,6 @@ const UserDropdown = ({ username }) => {
             >
               Thông tin cá nhân
             </button>
-            <button
-              onClick={() => navigate("/membership")}
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            >
-              Gói hội viên
-            </button>
           </div>
         </div>
       )}

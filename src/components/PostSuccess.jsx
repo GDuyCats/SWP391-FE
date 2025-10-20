@@ -6,7 +6,7 @@ export default function PostSuccess() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-700 to-teal-900 flex flex-col items-center justify-center text-white">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center text-white">
       <div className="bg-teal-950 bg-opacity-70 p-12 rounded-2xl shadow-2xl w-4/5 max-w-md text-center">
         <div className="flex justify-center mb-4">
           <CheckCircle className="w-16 h-16 text-green-400" />
