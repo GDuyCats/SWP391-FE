@@ -122,8 +122,9 @@ const Header = () => {
                     Đăng ký
                   </button>
                   <button
-                    onClick={() => navigate("/chooselisting")}
-                    className="bg-gray-900 text-white hover:bg-gray-800 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                    disabled
+                    title="Vui lòng đăng nhập để đăng bài"
+                    className="bg-gray-300 text-white px-4 py-2 rounded-md text-sm font-medium opacity-60 cursor-not-allowed"
                   >
                     Đăng bài
                   </button>
