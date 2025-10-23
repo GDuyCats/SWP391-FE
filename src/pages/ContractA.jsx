@@ -1,6 +1,24 @@
-import { FileText, Phone, Mail, Shield, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, Shield, ChevronRight, Check } from 'lucide-react';
 
 function ContractA() {
+  const [showOTP, setShowOTP] = useState(false);
+  const [otp, setOTP] = useState('');
+
+  const handleSendOTP = () => {
+    setShowOTP(true);
+    alert('Mã OTP đã được gửi!');
+  };
+
+  const handleVerifyOTP = () => {
+    if (!otp || otp.length !== 6) {
+      alert('Vui lòng nhập đầy đủ 6 số OTP');
+      return;
+    }
+    
+    alert('Xác thực thành công!');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 px-6 py-12">
       <div className="max-w-5xl mx-auto">
@@ -67,79 +85,105 @@ function ContractA() {
 
           {/* Cột Phải - Form xác thực */}
           <div className="space-y-6">
-            <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-3xl p-8 border border-gray-100">
-              <h2 className="text-xl font-bold text-gray-800 mb-6">
-                Xác Thực Thông Tin
-              </h2>
+            <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-3xl p-8 border border-gray-100 min-h-[580px] flex flex-col justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800 mb-6">
+                  Xác Thực Thông Tin
+                </h2>
 
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Số điện thoại
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="tel"
-                      placeholder="Nhập số điện thoại..."
-                      className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl
-                        focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100
-                        transition-all duration-200"
-                    />
-                  </div>
-                </div>
+                {!showOTP ? (
+                  // Nút gửi OTP
+                  <div className="space-y-5 flex flex-col items-center justify-center min-h-[350px]">
+                    <div className="text-center mb-4">
+                      <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <FileText className="w-10 h-10 text-blue-600" />
+                      </div>
+                      <p className="text-gray-600 text-center">
+                        Nhấn nút bên dưới để nhận mã OTP xác thực giao dịch
+                      </p>
+                    </div>
 
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200"></div>
+                    <button
+                      onClick={handleSendOTP}
+                      className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-600
+                        text-white text-lg font-semibold rounded-2xl
+                        hover:from-blue-600 hover:to-indigo-700
+                        transform hover:scale-[1.02] active:scale-[0.98]
+                        transition-all duration-200 shadow-lg hover:shadow-xl
+                        flex items-center justify-center gap-2 group cursor-pointer"
+                    >
+                      Xác nhận và gửi OTP
+                      <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </button>
                   </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-4 bg-white text-gray-500">hoặc</span>
-                  </div>
-                </div>
+                ) : (
+                  // Form nhập OTP
+                  <div className="space-y-5">
+                    <div className="text-center mb-6">
+                      <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Check className="w-10 h-10 text-green-600" />
+                      </div>
+                      <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                        <p className="text-sm text-green-800 text-center">
+                          Mã OTP đã được gửi đến số email của bạn
+                        </p>
+                      </div>
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="email"
-                      placeholder="Nhập email..."
-                      className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl
-                        focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100
-                        transition-all duration-200"
-                    />
-                  </div>
-                </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
+                        Nhập mã OTP (6 số)
+                      </label>
+                      <input
+                        type="text"
+                        maxLength="6"
+                        value={otp}
+                        onChange={(e) => setOTP(e.target.value.replace(/\D/g, ''))}
+                        placeholder="000000"
+                        className="w-full px-4 py-4 border-2 border-gray-200 rounded-2xl
+                          text-center text-2xl font-bold tracking-widest
+                          focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100
+                          transition-all duration-200"
+                      />
+                    </div>
 
-                <button
-                  className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-600
-                    text-white text-lg font-semibold rounded-2xl
-                    hover:from-blue-600 hover:to-indigo-700
-                    transform hover:scale-[1.02] active:scale-[0.98]
-                    transition-all duration-200 shadow-lg hover:shadow-xl
-                    flex items-center justify-center gap-2 group cursor-pointer"
-                >
-                  Xác nhận và gửi OTP
-                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </button>
+                    <button
+                      onClick={handleVerifyOTP}
+                      className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-600
+                        text-white text-lg font-semibold rounded-2xl
+                        hover:from-blue-600 hover:to-indigo-700
+                        transform hover:scale-[1.02] active:scale-[0.98]
+                        transition-all duration-200 shadow-lg hover:shadow-xl
+                        flex items-center justify-center gap-2 group cursor-pointer"
+                    >
+                      <Check className="w-5 h-5" />
+                      Xác nhận OTP
+                    </button>
+
+                    <button
+                      onClick={() => setShowOTP(false)}
+                      className="w-full py-3 text-gray-600 hover:text-gray-800 font-medium
+                        transition-colors cursor-pointer"
+                    >
+                      ← Quay lại
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* Thông tin bổ sung */}
-            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6">
-              <div className="flex gap-3">
-                <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="font-semibold text-blue-900 mb-1">
-                    Bảo mật thông tin
-                  </h3>
-                  <p className="text-sm text-blue-700">
-                    Thông tin của bạn được mã hóa và bảo mật tuyệt đối. 
-                    Mã OTP sẽ được gửi trong vòng 60 giây.
-                  </p>
+              {/* Thông tin bổ sung */}
+              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 mt-6">
+                <div className="flex gap-3">
+                  <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-blue-900 mb-1">
+                      Bảo mật thông tin
+                    </h3>
+                    <p className="text-sm text-blue-700">
+                      Thông tin của bạn được mã hóa và bảo mật tuyệt đối. 
+                      Mã OTP sẽ được gửi trong vòng 60 giây.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
