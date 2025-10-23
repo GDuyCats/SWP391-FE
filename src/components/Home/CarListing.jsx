@@ -1,139 +1,158 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { api } from "../../services/api";
+import Toast from "../Toast";
+import { useNavigate } from "react-router-dom";
 
 const CarListing = () => {
-  const cars = [
-    {
-      id: 1,
-      name: "Tesla Model 3 2022",
-      price: "1.2 tỷ",
-      image:
-        "https://images.unsplash.com/photo-1560958089-b8a1929cea89?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-      mileage: "15,000 km",
-      year: "2022",
-      location: "TP. Hồ Chí Minh",
-      battery: "75 kWh",
-    },
-    {
-      id: 2,
-      name: "BMW i3 2021",
-      price: "850 triệu",
-      image:
-        "https://images.unsplash.com/photo-1555215695-3004980ad54e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-      mileage: "25,000 km",
-      year: "2021",
-      location: "Hà Nội",
-      battery: "42 kWh",
-    },
-    {
-      id: 3,
-      name: "Audi e-tron 2020",
-      price: "1.5 tỷ",
-      image:
-        "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-      mileage: "30,000 km",
-      year: "2020",
-      location: "Đà Nẵng",
-      battery: "95 kWh",
-    },
-    {
-      id: 4,
-      name: "Hyundai Kona Electric 2022",
-      price: "650 triệu",
-      image:
-        "https://images.unsplash.com/photo-1606152421802-db97b9c7a11b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-      mileage: "20,000 km",
-      year: "2022",
-      location: "TP. Hồ Chí Minh",
-      battery: "64 kWh",
-    },
-    {
-      id: 5,
-      name: "Mercedes EQC 2021",
-      price: "1.8 tỷ",
-      image:
-        "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-      mileage: "18,000 km",
-      year: "2021",
-      location: "Hà Nội",
-      battery: "80 kWh",
-    },
-    {
-      id: 6,
-      name: "Kia EV6 2023",
-      price: "950 triệu",
-      image:
-        "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-      mileage: "8,000 km",
-      year: "2023",
-      location: "TP. Hồ Chí Minh",
-      battery: "77 kWh",
-    },
-  ];
+  const navigate = useNavigate();
+  const [posts, setPosts] = useState([]);
+  const [msg, setMsg] = useState("");
+  const [toast, setToast] = useState(false);
+  const [type, setType] = useState("");
+
+  async function handleRequest(id) {
+    console.log(id);
+
+    try {
+      const res = await api.post("/contracts/request", {
+        postId: id,
+        message: "Tôi muốn mua xe này"
+
+      });
+      console.log(res);
+      if (res.status === 201) {
+        setToast(true)
+        setType("success")
+        setMsg(res.data.message)
+      }
+    } catch (error) {
+      console.log(error);
+      const status = error?.status;
+      const msg = error?.response?.data?.message
+      let errorMsg = 'Không thể yêu cầu mua xe';
+
+      setToast(true)
+      setType("error")
+      if (status === 400) {
+        errorMsg = msg ? msg : "Bài đăng chưa được xác thực"
+      } else if (status === 403) {
+        errorMsg = msg ? msg : "Không đủ quyền (Admin/Staff không được phép"
+      } else if (status === 404) {
+        errorMsg = msg ? msg : "Không tìm thấy bài đăng"
+      } else if (status === 409) {
+        errorMsg = msg ? msg : "Người mua đã có hợp đồng đang hiệu lực cho bài này"
+      } else if (status === 500) {
+        errorMsg = msg ? msg : "Lỗi máy chủ"
+        setTimeout(() => navigate('/login'), 2000);
+      }
+      setMsg(errorMsg);
+    } finally {
+      setTimeout(() => setToast(false), 3000);
+    }
+  }
+
+  async function getAllPosts() {
+    try {
+      const res = await api.get("/me/post");
+      console.log(res);
+      if (res.status === 200) {
+        setPosts(res.data.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  useEffect(() => {
+    getAllPosts();
+  }, []);
+
+  const formatPrice = (price) => {
+    if (!price) return "Liên hệ";
+    return Number(price).toLocaleString("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    });
+  };
+
+  console.log(msg);
+  
 
   return (
     <section className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Tiêu đề */}
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
             Xe điện nổi bật
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Khám phá những chiếc xe điện đã qua sử dụng chất lượng tốt nhất
           </p>
         </div>
 
+        {/* Danh sách xe */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {cars.map((car) => (
+          {posts.map((post) => (
             <div
-              key={car.id}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow"
+              key={post.id}
+              className={`relative bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 ${post.isVip ? "border-2 border-yellow-400" : ""
+                }`}
             >
+              {/* Ảnh */}
               <div className="relative">
                 <img
-                  src={car.image}
-                  alt={car.name}
-                  className="w-full h-48 object-cover"
+                  src={
+                    post.image && post.image.length > 0
+                      ? post.image[0]
+                      : "https://via.placeholder.com/400x300?text=No+Image"
+                  }
+                  alt={post.title}
+                  className="w-full h-56 object-cover"
                 />
-                <div className="absolute top-4 right-4 bg-white px-2 py-1 rounded-full text-sm font-medium text-gray-900">
-                  {car.year}
-                </div>
+
+                {/* Huy hiệu VIP */}
+                {post.isVip && (
+                  <div className="absolute top-4 left-4 bg-yellow-400 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-md">
+                    VIP
+                  </div>
+                )}
               </div>
 
+              {/* Nội dung */}
               <div className="p-6">
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {car.name}
+                  {post.title}
                 </h3>
+                <p className="text-gray-600 mb-4 line-clamp-2">
+                  {post.content}
+                </p>
 
-                <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Giá:</span>
-                    <span className="font-semibold text-gray-900">
-                      {car.price}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Số km:</span>
-                    <span>{car.mileage}</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Pin:</span>
-                    <span>{car.battery}</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Vị trí:</span>
-                    <span>{car.location}</span>
-                  </div>
+                {/* Giá tiền */}
+                <div className="flex justify-between items-center text-sm mb-4">
+                  <span className="text-gray-600">Giá:</span>
+                  <span className="font-semibold text-green-600 text-lg">
+                    {formatPrice(post.price)}
+                  </span>
                 </div>
 
+                {/* Nút */}
                 <div className="flex space-x-3">
-                  <Link to={`/listing/ev/${car.id}`} state={{ car }} className="flex-1">
+                  <Link
+                    to={`/listing/ev/${post.id}`}
+                    state={{ post }}
+                    className="flex-1"
+                  >
                     <button className="w-full bg-gray-900 text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors font-medium">
                       Xem chi tiết
                     </button>
                   </Link>
-                  <button className="flex-1 border border-gray-300 text-gray-900 py-2 px-4 rounded-md hover:bg-gray-50 transition-colors font-medium">
-                    Gửi yêu cầu mua xe
+                  <button
+                    onClick={() => handleRequest(post.id)}
+                    className="flex-1 border border-gray-300 text-gray-900 py-2 px-4 rounded-md hover:bg-gray-50 transition-colors font-medium"
+                  >
+                    Gửi yêu cầu
                   </button>
                 </div>
               </div>
@@ -141,12 +160,17 @@ const CarListing = () => {
           ))}
         </div>
 
+        {/* Nút xem thêm */}
         <div className="text-center mt-12">
           <button className="bg-gray-900 text-white px-8 py-3 rounded-md hover:bg-gray-800 transition-colors font-medium">
             Xem tất cả xe điện
           </button>
         </div>
+
       </div>
+      {toast && msg && (
+        <Toast type={type} msg={msg} />
+      )}
     </section>
   );
 };

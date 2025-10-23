@@ -72,7 +72,7 @@ function Login() {
       showToast("success", resp.data.message || "Login success");
       // Redirect based on role: admin -> /admin, others -> /
       const role = resp?.data?.user?.role;
-      if (role === "admin"||role ==="staff") {
+      if (role === "admin" || role ==="staff") {
         navigate("/admin");
       } else {
         navigate("/");
