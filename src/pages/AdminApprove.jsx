@@ -124,7 +124,7 @@ const AdminApprove = () => {
         errorMsg = msg ? msg : 'Lỗi 404: Không tìm thấy bài đăng';
       } else if (status === 500) {
         errorMsg = msg ? msg : 'Lỗi 500: Lỗi server nội bộ';
-        setTimeout(() => navigate('/login'), 2000);
+        // setTimeout(() => navigate('/login'), 2000);
       }
 
       setMessage(errorMsg);
