@@ -17,6 +17,12 @@ import Contact from "./pages/Contact";
 import Layout from "./components/Layout";
 import CarDetails from "./pages/Listing/CarDetails";
 import AdminHome from "./pages/Admin/Home";
+import TransactionRecords from "./pages/Admin/TransactionRecords";
+import TransactionDetail from "./pages/Admin/TransactionDetail";
+import TransactionSuccess from "./pages/Admin/TransactionSuccess";
+import StaffAssignment from "./pages/Admin/StaffAssignment";
+import Forbidden from "./pages/Admin/Forbidden";
+import AdminRoute from "./components/Admin/AdminRoute";
 import Cars from "./pages/Cars";
 import PaymentSuccessfully from "./pages/PaymentSuccessfully";
 import PaymentFails from "./pages/PaymentFails";
@@ -25,6 +31,7 @@ import ListingEV from "./pages/Listing/ListingEV";
 import ListingBattery from "./pages/Listing/ListingBattery";
 import PackageSelection from "./pages/Listing/PackageSelection";
 import PaymentStep from "./pages/Listing/PaymentStep";
+import BuyRequests from "./pages/BuyRequests";
 function App() {
   return (
     <BrowserRouter>
@@ -55,9 +62,22 @@ function App() {
         <Route path="/contractB" element={<ContractB />} />
         <Route path="/admin" element={<AdminHome />} />
         <Route path="/adminapprove" element={<AdminApprove />} />
+        <Route
+          path="/admin/assignments"
+          element={
+            <AdminRoute>
+              <StaffAssignment />
+            </AdminRoute>
+          }
+        />
+        <Route path="/admin/forbidden" element={<Forbidden />} />
+        <Route path="/transactionrecords" element={<TransactionRecords />} />
+        <Route path="/transactiondetail/:id" element={<TransactionDetail />} />
+        <Route path="/transactionsuccess" element={<TransactionSuccess />} />
         <Route path="/paymentsuccessfully" element={<PaymentSuccessfully />} />
         <Route path="/paymentfails" element={<PaymentFails />} />
-        <Route path="/cars" element={<Cars />} />
+  <Route path="/cars" element={<Cars />} />
+  <Route path="/buy-requests" element={<BuyRequests />} />
       </Routes>
     </BrowserRouter>
   );
