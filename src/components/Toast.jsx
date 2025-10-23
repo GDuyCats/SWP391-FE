@@ -1,5 +1,6 @@
 {/* Toast */}
-function Toast(type, msg) {
+function Toast({type, msg}) {
+  
     return(
         
         <div

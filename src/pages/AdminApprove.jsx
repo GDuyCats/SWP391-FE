@@ -300,14 +300,14 @@ const AdminApprove = () => {
                         onClick={() => handleVerify(post.id)}
                         className="bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600 shadow-sm transition cursor-pointer"
                       >
-                        Duyệt
+                        Xác Thực
                       </button>
                     ) : (
                       <button
                         disabled
                         className="bg-gray-300 text-white px-4 py-2 rounded-full cursor-not-allowed"
                       >
-                        Đã duyệt
+                        Đã xác thực
                       </button>
                     )}
                   </td>
