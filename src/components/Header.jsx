@@ -92,7 +92,7 @@ const Header = () => {
             >
               Liên hệ
             </NavLink>
-            {user && (
+            {/* {user && (
               <NavLink
                 to="/buy-requests"
                 className={({ isActive }) =>
@@ -101,7 +101,7 @@ const Header = () => {
               >
                 Yêu cầu mua hàng
               </NavLink>
-            )}
+            )} */}
           </nav>
 
           {/* Right: User actions */}

@@ -15,7 +15,7 @@ const CarListing = () => {
     console.log(id);
 
     try {
-      const res = await api.post("/contracts/request", {
+      const res = await api.post("/PurchaseRequests", {
         postId: id,
         message: "Tôi muốn mua xe này"
 
@@ -54,7 +54,7 @@ const CarListing = () => {
 
   async function getAllPosts() {
     try {
-      const res = await api.get("/me/post");
+      const res = await api.get("/");
       console.log(res);
       if (res.status === 200) {
         setPosts(res.data.data);
@@ -76,7 +76,7 @@ const CarListing = () => {
     });
   };
 
-  console.log(msg);
+  console.log(posts);
   
 
   return (
@@ -127,6 +127,10 @@ const CarListing = () => {
                 </h3>
                 <p className="text-gray-600 mb-4 line-clamp-2">
                   {post.content}
+                </p>
+
+                <p className="text-gray-600 mb-4 line-clamp-2">
+                  {post.username}
                 </p>
 
                 {/* Giá tiền */}

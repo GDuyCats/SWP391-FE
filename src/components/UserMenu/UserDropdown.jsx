@@ -38,6 +38,33 @@ const UserDropdown = ({ username }) => {
             >
               Thông tin cá nhân
             </button>
+            <button
+              onClick={() => navigate("/buy-requests")}
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              Quản lý yêu cầu mua xe
+            </button>
+
+            <button
+              onClick={() => navigate("/contractA")}
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              Hợp đồng bên mua
+            </button>
+
+            <button
+              onClick={() => navigate("/contractB")}
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              Hợp đồng bên bán
+            </button>
+
+            <button
+              onClick={() => navigate("/postmanagement")}
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              Quản lý bài đăng
+            </button>
           </div>
         </div>
       )}

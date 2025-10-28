@@ -119,20 +119,23 @@ const AdminApprove = () => {
         errorMsg = msg ? msg : 'Lỗi 400: verifyStatus không hợp lệ';
 
       } else if (status === 403) {
-        errorMsg = msg ? msg : 'Lỗi 403: Người dùng không có quyền duyệt bài';
+        errorMsg = msg ? msg : 'Lỗi 403: Không có quyền (hoặc Staff duyệt bài chưa active)';
       } else if (status === 404) {
         errorMsg = msg ? msg : 'Lỗi 404: Không tìm thấy bài đăng';
       } else if (status === 500) {
         errorMsg = msg ? msg : 'Lỗi 500: Lỗi server nội bộ';
         // setTimeout(() => navigate('/login'), 2000);
       }
-
+     
       setMessage(errorMsg);
     } finally {
       setTimeout(() => setToast(false), 3000);
     }
 
   };
+
+  
+  
 
   const renderStatus = (post) => {
     const isVerified = post.verifyStatus === 'verify';

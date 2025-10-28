@@ -32,13 +32,17 @@ import ListingBattery from "./pages/Listing/ListingBattery";
 import PackageSelection from "./pages/Listing/PackageSelection";
 import PaymentStep from "./pages/Listing/PaymentStep";
 import BuyRequests from "./pages/BuyRequests";
+import LayoutAdmin from "./components/LayoutAdmin";
+
+import PostManagement from "./pages/PostManagement";
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
-          <Route path="/users" element={<Users />} />
+          
+          <Route path="/postmanagement" element={<PostManagement />} />
           <Route path="/confirmation" element={<Confirmation />} />
           <Route path="/success" element={<Success />} />
           <Route path="*" element={<NotFound />} />
@@ -47,6 +51,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<About />} />
+          <Route path="/buy-requests" element={<BuyRequests />} />
 
           {/* Listing Routes */}
           <Route path="/chooselisting" element={<ChooseListing />} />
@@ -55,29 +60,36 @@ function App() {
           <Route path="/listing/package" element={<PackageSelection />} />
           <Route path="/listing/payment" element={<PaymentStep />} />
         </Route>
+
         <Route path="/listing/ev/:id" element={<CarDetails />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/contractA" element={<ContractA />} />
         <Route path="/contractB" element={<ContractB />} />
         <Route path="/admin" element={<AdminHome />} />
-        <Route path="/adminapprove" element={<AdminApprove />} />
+
         <Route
           path="/admin/assignments"
           element={
             <AdminRoute>
               <StaffAssignment />
+
             </AdminRoute>
           }
         />
+        <Route element={<LayoutAdmin />}>
+          <Route path="/users" element={<Users />} />
+          <Route path="/adminapprove" element={<AdminApprove />} />
+        </Route>
+
         <Route path="/admin/forbidden" element={<Forbidden />} />
         <Route path="/transactionrecords" element={<TransactionRecords />} />
         <Route path="/transactiondetail/:id" element={<TransactionDetail />} />
         <Route path="/transactionsuccess" element={<TransactionSuccess />} />
         <Route path="/paymentsuccessfully" element={<PaymentSuccessfully />} />
         <Route path="/paymentfails" element={<PaymentFails />} />
-  <Route path="/cars" element={<Cars />} />
-  <Route path="/buy-requests" element={<BuyRequests />} />
+        <Route path="/cars" element={<Cars />} />
+        
       </Routes>
     </BrowserRouter>
   );

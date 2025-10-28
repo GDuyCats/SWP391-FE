@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { CheckCircle, XCircle, AlertCircle, X } from 'lucide-react';
 
-function Toast({ message, type = 'success', onClose, duration = 3000 }) {
+function Toast({ msg, type = 'success', onClose, duration = 3000 }) {
   useEffect(() => {
     if (duration && onClose) {
       const timer = setTimeout(() => {
@@ -28,7 +28,7 @@ function Toast({ message, type = 'success', onClose, duration = 3000 }) {
   return (
     <div className={`fixed top-4 right-4 z-50 ${colors[type]} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px] max-w-md animate-slide-in`}>
       {icons[type]}
-      <span className="flex-1">{message}</span>
+      <span className="flex-1">{msg}</span>
       {onClose && (
         <button
           onClick={onClose}
