@@ -1,30 +1,46 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Send, CheckCircle, DollarSign, User } from "lucide-react";
+import {
+  ArrowLeft,
+  Send,
+  CheckCircle,
+  DollarSign,
+  User,
+} from "lucide-react";
 import AdminHeader from "../../components/Admin/AdminHeader";
 import AdminSidebar from "../../components/Admin/AdminSidebar";
 import Toast from "../../components/Toast";
 
-/* =========================
-   Utils an toàn cho tiền tệ
-   ========================= */
+/* ========================= Utils an toàn cho tiền tệ ========================= */
 const onlyDigits = (s) => (s || "").replace(/[^\d]/g, ""); // giữ 0-9
+
 const toNumber = (s) => {
   const clean = onlyDigits(s);
   return clean === "" ? 0 : Number(clean);
 };
+
 const formatCurrency = (input) => {
-  const n = typeof input === "string" ? toNumber(input) : Number(input || 0);
+  const n =
+    typeof input === "string" ? toNumber(input) : Number(input || 0);
   return new Intl.NumberFormat("vi-VN").format(n);
 };
 
-/* Input field KHÔNG format trực tiếp vào value,
-   chỉ lưu chuỗi số thô để tránh caret nhảy/mất số */
-const FeeInputField = ({ label, value, onChange, error, required = true }) => (
+/* =========================================================================== */
+/* Component Input tiền tệ                                                     */
+/* Không format trong <input> để không làm nhảy caret                          */
+/* =========================================================================== */
+const FeeInputField = ({
+  label,
+  value,
+  onChange,
+  error,
+  required = true,
+}) => (
   <div className="mb-4">
     <label className="block text-sm font-medium text-gray-700 mb-2">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
+
     <div className="relative">
       <input
         type="text"
@@ -33,7 +49,7 @@ const FeeInputField = ({ label, value, onChange, error, required = true }) => (
         value={value ?? ""}
         onChange={(e) => {
           const raw = e.target.value;
-          onChange(onlyDigits(raw)); // chỉ giữ số, không thêm dấu
+          onChange(onlyDigits(raw)); // chỉ giữ số
         }}
         className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
           error ? "border-red-500" : "border-gray-300"
@@ -43,21 +59,28 @@ const FeeInputField = ({ label, value, onChange, error, required = true }) => (
       <DollarSign className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
     </div>
 
-    {/* Hiển thị format đẹp ở dưới (không ảnh hưởng con trỏ) */}
+    {/* Hiển thị format bên dưới */}
     {value && value !== "" && (
-      <p className="mt-1 text-sm text-gray-500">{formatCurrency(value)} VNĐ</p>
+      <p className="mt-1 text-sm text-gray-500">
+        {formatCurrency(value)} VNĐ
+      </p>
     )}
 
-    {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+    {error && (
+      <p className="mt-1 text-sm text-red-500">{error}</p>
+    )}
   </div>
 );
 
+/* =========================================================================== */
+/* Main page Component                                                         */
+/* =========================================================================== */
 export default function TransactionDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const recordData = location.state?.record;
 
-  // State cho phí của người mua (Người A) -> LƯU CHUỖI SỐ THÔ
+  // phí người mua (Người A) -> LƯU CHUỖI SỐ THÔ
   const [buyerFees, setBuyerFees] = useState({
     notarizationFee: "",
     commissionFee: "",
@@ -66,7 +89,7 @@ export default function TransactionDetail() {
     inspectionFee: "",
   });
 
-  // State cho phí của người bán (Người B) -> LƯU CHUỖI SỐ THÔ
+  // phí người bán (Người B) -> LƯU CHUỖI SỐ THÔ
   const [sellerFees, setSellerFees] = useState({
     notarizationFee: "",
     commissionFee: "",
@@ -75,49 +98,71 @@ export default function TransactionDetail() {
     inspectionFee: "",
   });
 
-  // State cho xác nhận hồ sơ
+  // trạng thái xác nhận hồ sơ
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [buyerConfirmed, setBuyerConfirmed] = useState(false);
   const [sellerConfirmed, setSellerConfirmed] = useState(false);
   const [recordSent, setRecordSent] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+
+  // toast
   const [toast, setToast] = useState(null);
 
-  // Validation
+  // validation
   const [errors, setErrors] = useState({});
 
   const handleBuyerFeeChange = (field, value) => {
-    setBuyerFees((prev) => ({ ...prev, [field]: value }));
+    setBuyerFees((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+
     if (errors[`buyer_${field}`]) {
-      setErrors((prev) => ({ ...prev, [`buyer_${field}`]: null }));
+      setErrors((prev) => ({
+        ...prev,
+        [`buyer_${field}`]: null,
+      }));
     }
   };
 
   const handleSellerFeeChange = (field, value) => {
-    setSellerFees((prev) => ({ ...prev, [field]: value }));
+    setSellerFees((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+
     if (errors[`seller_${field}`]) {
-      setErrors((prev) => ({ ...prev, [`seller_${field}`]: null }));
+      setErrors((prev) => ({
+        ...prev,
+        [`seller_${field}`]: null,
+      }));
     }
   };
 
-  const calculateTotal = (fees) =>
-    Object.values(fees).reduce((sum, v) => sum + toNumber(v), 0);
+  const calculateTotal = (feesObj) =>
+    Object.values(feesObj).reduce(
+      (sum, v) => sum + toNumber(v),
+      0
+    );
 
   const validateFees = () => {
     const newErrors = {};
 
-    // Validate buyer fees
+    // buyer
     Object.keys(buyerFees).forEach((key) => {
       const v = toNumber(buyerFees[key]);
       if (Number.isNaN(v) || v < 0) {
-        newErrors[`buyer_${key}`] = "Vui lòng nhập số tiền hợp lệ";
+        newErrors[`buyer_${key}`] =
+          "Vui lòng nhập số tiền hợp lệ";
       }
     });
 
-    // Validate seller fees
+    // seller
     Object.keys(sellerFees).forEach((key) => {
       const v = toNumber(sellerFees[key]);
       if (Number.isNaN(v) || v < 0) {
-        newErrors[`seller_${key}`] = "Vui lòng nhập số tiền hợp lệ";
+        newErrors[`seller_${key}`] =
+          "Vui lòng nhập số tiền hợp lệ";
       }
     });
 
@@ -125,6 +170,7 @@ export default function TransactionDetail() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Gửi hồ sơ để xác nhận
   const handleSendOtp = () => {
     if (!validateFees()) {
       setToast({
@@ -135,20 +181,33 @@ export default function TransactionDetail() {
       return;
     }
 
-    // Giả lập gửi hồ sơ
     setRecordSent(true);
     setShowConfirmModal(true);
+
     setToast({
       type: "success",
-      message: "Hồ sơ đã được gửi đến người mua và người bán để xác nhận",
+      message:
+        "Hồ sơ đã được gửi đến người mua và người bán để xác nhận",
     });
   };
 
+  // Gửi mã OTP cho buyer/seller
+  const handleSendOtpCode = () => {
+    setOtpSent(true);
+    setToast({
+      type: "success",
+      message:
+        "Đã gửi mã OTP đến người mua và người bán",
+    });
+  };
+
+  // Xác nhận giao dịch sau khi cả 2 tick
   const handleVerifyOtp = () => {
     if (!buyerConfirmed) {
       setToast({
         type: "error",
-        message: "Vui lòng chờ người mua xác nhận hồ sơ",
+        message:
+          "Vui lòng chờ người mua xác nhận hồ sơ",
       });
       return;
     }
@@ -156,7 +215,8 @@ export default function TransactionDetail() {
     if (!sellerConfirmed) {
       setToast({
         type: "error",
-        message: "Vui lòng chờ người bán xác nhận hồ sơ",
+        message:
+          "Vui lòng chờ người bán xác nhận hồ sơ",
       });
       return;
     }
@@ -168,10 +228,13 @@ export default function TransactionDetail() {
     });
 
     setTimeout(() => {
-      navigate("/transactionsuccess", { state: { record: recordData } });
+      navigate("/transactionsuccess", {
+        state: { record: recordData },
+      });
     }, 1500);
   };
 
+  // Nếu không có recordData
   if (!recordData) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -180,7 +243,9 @@ export default function TransactionDetail() {
           <AdminSidebar />
           <main className="flex-1 py-8 px-6">
             <div className="max-w-7xl mx-auto text-center">
-              <p className="text-gray-600 mb-4">Không tìm thấy thông tin hồ sơ</p>
+              <p className="text-gray-600 mb-4">
+                Không tìm thấy thông tin hồ sơ
+              </p>
               <button
                 onClick={() => navigate("/transactionrecords")}
                 className="text-blue-600 hover:underline"
@@ -194,11 +259,14 @@ export default function TransactionDetail() {
     );
   }
 
+  /* ========================= JSX chính ========================= */
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminHeader />
+
       <div className="flex">
         <AdminSidebar />
+
         <main className="flex-1 py-8 px-6">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
@@ -210,35 +278,50 @@ export default function TransactionDetail() {
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 Quay lại danh sách hồ sơ
               </button>
+
               <h1 className="text-3xl font-bold text-gray-900">
                 Chi tiết hồ sơ - {recordData.id}
               </h1>
               <p className="text-gray-600 mt-2">
-                Điền thông tin các khoản phí cho giao dịch mua bán xe
+                Điền thông tin các khoản phí cho giao dịch
+                mua bán xe
               </p>
             </div>
 
             {/* Transaction Info Card */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-              <h2 className="text-xl font-semibold mb-4">Thông tin giao dịch</h2>
+              <h2 className="text-xl font-semibold mb-4">
+                Thông tin giao dịch
+              </h2>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <p className="text-sm text-gray-500">Mã hồ sơ</p>
-                  <p className="font-semibold text-gray-900">{recordData.id}</p>
+                  <p className="text-sm text-gray-500">
+                    Mã hồ sơ
+                  </p>
+                  <p className="font-semibold text-gray-900">
+                    {recordData.id}
+                  </p>
                 </div>
+
                 <div>
-                  <p className="text-sm text-gray-500">Xe giao dịch</p>
+                  <p className="text-sm text-gray-500">
+                    Xe giao dịch
+                  </p>
                   <p className="font-semibold text-gray-900">
                     {recordData.carModel}
                   </p>
                 </div>
+
                 <div>
-                  <p className="text-sm text-gray-500">Giá trị giao dịch</p>
+                  <p className="text-sm text-gray-500">
+                    Giá trị giao dịch
+                  </p>
                   <p className="font-semibold text-blue-600 text-lg">
                     {typeof recordData.price === "number"
-                      ? `${new Intl.NumberFormat("vi-VN").format(
-                          recordData.price
-                        )} VNĐ`
+                      ? `${new Intl.NumberFormat(
+                          "vi-VN"
+                        ).format(recordData.price)} VNĐ`
                       : recordData.price}
                   </p>
                 </div>
@@ -262,44 +345,64 @@ export default function TransactionDetail() {
                     </div>
                   </div>
                 </div>
+
                 <div className="p-6">
                   <FeeInputField
                     label="Phí công chứng"
                     value={buyerFees.notarizationFee}
-                    onChange={(value) =>
-                      handleBuyerFeeChange("notarizationFee", value)
+                    onChange={(v) =>
+                      handleBuyerFeeChange(
+                        "notarizationFee",
+                        v
+                      )
                     }
                     error={errors.buyer_notarizationFee}
                   />
+
                   <FeeInputField
                     label="Phí hoa hồng"
                     value={buyerFees.commissionFee}
-                    onChange={(value) =>
-                      handleBuyerFeeChange("commissionFee", value)
+                    onChange={(v) =>
+                      handleBuyerFeeChange(
+                        "commissionFee",
+                        v
+                      )
                     }
                     error={errors.buyer_commissionFee}
                   />
+
                   <FeeInputField
                     label="Phí trước bạ"
                     value={buyerFees.registrationFee}
-                    onChange={(value) =>
-                      handleBuyerFeeChange("registrationFee", value)
+                    onChange={(v) =>
+                      handleBuyerFeeChange(
+                        "registrationFee",
+                        v
+                      )
                     }
                     error={errors.buyer_registrationFee}
                   />
+
                   <FeeInputField
                     label="Phí đăng ký"
                     value={buyerFees.licensePlateFee}
-                    onChange={(value) =>
-                      handleBuyerFeeChange("licensePlateFee", value)
+                    onChange={(v) =>
+                      handleBuyerFeeChange(
+                        "licensePlateFee",
+                        v
+                      )
                     }
                     error={errors.buyer_licensePlateFee}
                   />
+
                   <FeeInputField
                     label="Phí cấp biển/sang tên"
                     value={buyerFees.inspectionFee}
-                    onChange={(value) =>
-                      handleBuyerFeeChange("inspectionFee", value)
+                    onChange={(v) =>
+                      handleBuyerFeeChange(
+                        "inspectionFee",
+                        v
+                      )
                     }
                     error={errors.buyer_inspectionFee}
                   />
@@ -310,7 +413,10 @@ export default function TransactionDetail() {
                         Tổng phí:
                       </span>
                       <span className="text-xl font-bold text-blue-600">
-                        {formatCurrency(calculateTotal(buyerFees))} VNĐ
+                        {formatCurrency(
+                          calculateTotal(buyerFees)
+                        )}{" "}
+                        VNĐ
                       </span>
                     </div>
                   </div>
@@ -332,44 +438,64 @@ export default function TransactionDetail() {
                     </div>
                   </div>
                 </div>
+
                 <div className="p-6">
                   <FeeInputField
                     label="Phí công chứng"
                     value={sellerFees.notarizationFee}
-                    onChange={(value) =>
-                      handleSellerFeeChange("notarizationFee", value)
+                    onChange={(v) =>
+                      handleSellerFeeChange(
+                        "notarizationFee",
+                        v
+                      )
                     }
                     error={errors.seller_notarizationFee}
                   />
+
                   <FeeInputField
                     label="Phí hoa hồng"
                     value={sellerFees.commissionFee}
-                    onChange={(value) =>
-                      handleSellerFeeChange("commissionFee", value)
+                    onChange={(v) =>
+                      handleSellerFeeChange(
+                        "commissionFee",
+                        v
+                      )
                     }
                     error={errors.seller_commissionFee}
                   />
+
                   <FeeInputField
                     label="Phí trước bạ"
                     value={sellerFees.registrationFee}
-                    onChange={(value) =>
-                      handleSellerFeeChange("registrationFee", value)
+                    onChange={(v) =>
+                      handleSellerFeeChange(
+                        "registrationFee",
+                        v
+                      )
                     }
                     error={errors.seller_registrationFee}
                   />
+
                   <FeeInputField
                     label="Phí đăng ký"
                     value={sellerFees.licensePlateFee}
-                    onChange={(value) =>
-                      handleSellerFeeChange("licensePlateFee", value)
+                    onChange={(v) =>
+                      handleSellerFeeChange(
+                        "licensePlateFee",
+                        v
+                      )
                     }
                     error={errors.seller_licensePlateFee}
                   />
+
                   <FeeInputField
                     label="Lệ phí đăng kiểm/đường bộ"
                     value={sellerFees.inspectionFee}
-                    onChange={(value) =>
-                      handleSellerFeeChange("inspectionFee", value)
+                    onChange={(v) =>
+                      handleSellerFeeChange(
+                        "inspectionFee",
+                        v
+                      )
                     }
                     error={errors.seller_inspectionFee}
                   />
@@ -380,7 +506,10 @@ export default function TransactionDetail() {
                         Tổng phí:
                       </span>
                       <span className="text-xl font-bold text-green-600">
-                        {formatCurrency(calculateTotal(sellerFees))} VNĐ
+                        {formatCurrency(
+                          calculateTotal(sellerFees)
+                        )}{" "}
+                        VNĐ
                       </span>
                     </div>
                   </div>
@@ -396,16 +525,33 @@ export default function TransactionDetail() {
                     Gửi hồ sơ xác nhận
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    Gửi hồ sơ đến người mua và người bán để xác nhận các khoản phí
+                    Gửi hồ sơ đến người mua và người bán để xác
+                    nhận các khoản phí
                   </p>
                 </div>
-                <button
-                  onClick={handleSendOtp}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                >
-                  <Send className="w-5 h-5" />
-                  Gửi hồ sơ
-                </button>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleSendOtp}
+                    className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    <Send className="w-5 h-5" />
+                    Gửi hồ sơ
+                  </button>
+
+                  <button
+                    onClick={handleSendOtpCode}
+                    disabled={otpSent}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-lg border transition-colors font-medium ${
+                      otpSent
+                        ? "border-gray-300 text-gray-400 cursor-not-allowed"
+                        : "border-blue-600 text-blue-600 hover:bg-blue-50"
+                    }`}
+                  >
+                    <Send className="w-5 h-5" />
+                    {otpSent ? "Đã gửi OTP" : "Gửi mã OTP"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -423,8 +569,11 @@ export default function TransactionDetail() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
+              {/* Header modal */}
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Xác nhận hồ sơ</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Xác nhận hồ sơ
+                </h2>
                 <button
                   onClick={() => setShowConfirmModal(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -445,6 +594,7 @@ export default function TransactionDetail() {
                 </button>
               </div>
 
+              {/* Banner đã gửi hồ sơ */}
               {recordSent && (
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
@@ -453,7 +603,8 @@ export default function TransactionDetail() {
                       Hồ sơ đã được gửi
                     </p>
                     <p className="text-sm text-green-700 mt-1">
-                      Đang chờ người mua và người bán xác nhận hồ sơ
+                      Đang chờ người mua và người bán xác nhận
+                      hồ sơ
                     </p>
                   </div>
                 </div>
@@ -474,19 +625,26 @@ export default function TransactionDetail() {
                         </p>
                       </div>
                     </div>
+
                     {buyerConfirmed && (
                       <CheckCircle className="w-6 h-6 text-green-600" />
                     )}
                   </div>
+
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       id="buyerConfirm"
                       checked={buyerConfirmed}
-                      onChange={(e) => setBuyerConfirmed(e.target.checked)}
+                      onChange={(e) =>
+                        setBuyerConfirmed(e.target.checked)
+                      }
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
-                    <label htmlFor="buyerConfirm" className="text-sm text-gray-700">
+                    <label
+                      htmlFor="buyerConfirm"
+                      className="text-sm text-gray-700"
+                    >
                       Người mua đã xác nhận hồ sơ
                     </label>
                   </div>
@@ -506,25 +664,33 @@ export default function TransactionDetail() {
                         </p>
                       </div>
                     </div>
+
                     {sellerConfirmed && (
                       <CheckCircle className="w-6 h-6 text-green-600" />
                     )}
                   </div>
+
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       id="sellerConfirm"
                       checked={sellerConfirmed}
-                      onChange={(e) => setSellerConfirmed(e.target.checked)}
+                      onChange={(e) =>
+                        setSellerConfirmed(e.target.checked)
+                      }
                       className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
                     />
-                    <label htmlFor="sellerConfirm" className="text-sm text-gray-700">
+                    <label
+                      htmlFor="sellerConfirm"
+                      className="text-sm text-gray-700"
+                    >
                       Người bán đã xác nhận hồ sơ
                     </label>
                   </div>
                 </div>
               </div>
 
+              {/* Nút hành động trong modal */}
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={handleVerifyOtp}
@@ -537,6 +703,7 @@ export default function TransactionDetail() {
                 >
                   Xác nhận giao dịch
                 </button>
+
                 <button
                   onClick={() => setShowConfirmModal(false)}
                   className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -558,9 +725,13 @@ export default function TransactionDetail() {
         </div>
       )}
 
-      {/* Toast Notification */}
+      {/* Toast */}
       {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );
