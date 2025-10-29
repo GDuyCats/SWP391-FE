@@ -46,14 +46,14 @@ const UserDropdown = ({ username }) => {
             </button>
 
             <button
-              onClick={() => navigate("/contractA")}
+              onClick={() => navigate("/buyer-contract-management")}
               className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
             >
               Hợp đồng bên mua
             </button>
 
             <button
-              onClick={() => navigate("/contractB")}
+              onClick={() => navigate("/seller-contract-management")}
               className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
             >
               Hợp đồng bên bán

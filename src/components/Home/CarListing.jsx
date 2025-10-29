@@ -106,7 +106,7 @@ const CarListing = () => {
                   src={
                     post.image && post.image.length > 0
                       ? post.image[0]
-                      : "https://via.placeholder.com/400x300?text=No+Image"
+                      : "https://cdn.thepennyhoarder.com/wp-content/uploads/2022/05/21141022/hybrid-vs-electric-final.jpg"
                   }
                   alt={post.title}
                   className="w-full h-56 object-cover"

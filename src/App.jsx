@@ -35,13 +35,16 @@ import BuyRequests from "./pages/BuyRequests";
 import LayoutAdmin from "./components/LayoutAdmin";
 
 import PostManagement from "./pages/PostManagement";
+import BuyerContractManagement from "./pages/BuyerContractManagement";
+import SellerContractManagement from "./pages/SellerContractManagement";
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
-          
+          <Route path="/buyer-contract-management" element={<BuyerContractManagement />} />
+          <Route path="/seller-contract-management" element={<SellerContractManagement />} />
           <Route path="/postmanagement" element={<PostManagement />} />
           <Route path="/confirmation" element={<Confirmation />} />
           <Route path="/success" element={<Success />} />

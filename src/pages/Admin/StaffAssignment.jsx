@@ -8,11 +8,11 @@ import RequestDialog from "../../components/RequestDialog";
 
 export default function StaffAssignment() {
   const [msg, setMsg] = useState("");
-  const [staffs, setStaffs] = useState([]);
   const [toast, setToast] = useState(false);
   const [type, setType] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState(null);
+  const [staffs, setStaffs] = useState([]);
 
   async function getAllStaff() {
     try {
@@ -42,9 +42,7 @@ export default function StaffAssignment() {
     }
   }
 
-  // async function handleAssign() {
 
-  // }
 
   useEffect(() => {
     getAllStaff();
@@ -67,8 +65,8 @@ export default function StaffAssignment() {
       <AdminHeader />
       <div className="flex">
         <AdminSidebar />
-        <main className="flex-1 py-8 px-6">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 py-8 px-8">
+          <div className="w-full">
             <div className="mb-6">
               <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
                 <UserCog className="w-8 h-8 text-blue-600" /> Quản lý nhân viên
