@@ -1,54 +1,87 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Toast from "../components/Toast";
-
-// Mock data: requests to buy the current user's listings
-// type: 'xe' | 'pin'
-const mockRequests = [
-  { id: "BR-0001", requesterName: "Nguyễn Văn Nam", phone: "0901234567", type: "xe", itemTitle: "Toyota Vios 2022", createdAt: "2025-10-21", status: "Chờ xác nhận" },
-  { id: "BR-0002", requesterName: "Trần Thị Thu", phone: "0912345678", type: "pin", itemTitle: "PIN EV 72Ah", createdAt: "2025-10-22", status: "Chờ xác nhận" },
-  { id: "BR-0003", requesterName: "Phạm Quốc Huy", phone: "0923456789", type: "xe", itemTitle: "Honda City 2023", createdAt: "2025-10-20", status: "Chờ xác nhận" },
-  { id: "BR-0004", requesterName: "Lê Thị Linh", phone: "0934567890", type: "pin", itemTitle: "PIN EV 90Ah", createdAt: "2025-10-19", status: "Chờ xác nhận" },
-];
+import { FileText, Trash2 } from "lucide-react";
+import { api } from "../services/api";
+import BuyerDialog from "../components/Home/BuyerDialog";
 
 export default function BuyRequests() {
-  const [requests, setRequests] = useState(mockRequests);
+  const [posts, setPosts] = useState([]);
   const [filter, setFilter] = useState("Tất cả");
   const [toast, setToast] = useState(null);
+  const [id, setId] = useState(0);
+  const [openDialog, setOpenDialog] = useState(false);
 
+
+  // ===== LẤY DANH SÁCH BÀI ĐĂNG =====
+  async function getAllPosts() {
+    try {
+      const res = await api.get("/me/post");
+      if (res.status === 200) {
+        setPosts(res.data.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  // ===== LỌC =====
   const filtered = useMemo(() => {
-    if (filter === "Tất cả") return requests;
-    if (filter === "Xe") return requests.filter(r => r.type === 'xe');
-    if (filter === "Pin") return requests.filter(r => r.type === 'pin');
-    return requests;
-  }, [requests, filter]);
+    if (filter === "Tất cả") return posts;
+    return posts.filter((p) =>
+      filter === "Xe"
+        ? !p.title.toLowerCase().includes("pin")
+        : p.title.toLowerCase().includes("pin")
+    );
+  }, [posts, filter]);
 
-  const handleConfirm = (id) => {
-    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: "Đã xác nhận" } : r));
-    setToast({ type: 'success', message: `Đã xác nhận yêu cầu ${id}` });
+  const handleShowList = (id) => {
+    setId(id);
+    setOpenDialog(true);
+    console.log("Xem chi tiết bài đăng:", id);
   };
 
-  const handleDelete = (id) => {
-    setRequests(prev => prev.filter(r => r.id !== id));
-    setToast({ type: 'info', message: `Đã xóa yêu cầu ${id}` });
+  async function handleDelete(id){
+    try {
+      const res = await api.delete(`/delete/${id}`);
+      console.log(res);
+    } catch (error) {
+      console.log(error);
+    }
+    
   };
+
+  
+
+  useEffect(() => {
+    getAllPosts();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
+    <div className="min-h-screen bg-gray-50 py-10 px-6">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Yêu cầu mua hàng</h1>
-          <p className="text-gray-600 mt-2">Danh sách người mua liên hệ mua xe hoặc pin từ các bài đăng của bạn</p>
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Bài đăng của bạn
+          </h1>
+          <p className="text-gray-600">
+            Quản lý các bài đăng bán xe hoặc pin của bạn tại đây.
+          </p>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6 flex items-center gap-3">
-          <span className="text-sm text-gray-600">Lọc:</span>
-          <div className="flex gap-2">
-            {['Tất cả', 'Xe', 'Pin'].map(opt => (
+        {/* Filter */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600 font-medium">Lọc:</span>
+            {["Tất cả", "Xe", "Pin"].map((opt) => (
               <button
                 key={opt}
                 onClick={() => setFilter(opt)}
-                className={`px-3 py-1.5 rounded-md text-sm border ${filter === opt ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 hover:bg-gray-50'}`}
+                className={`px-4 py-1.5 rounded-full text-sm transition-all ${
+                  filter === opt
+                    ? "bg-gray-900 text-white shadow"
+                    : "bg-white border border-gray-300 hover:bg-gray-100"
+                }`}
               >
                 {opt}
               </button>
@@ -56,72 +89,86 @@ export default function BuyRequests() {
           </div>
         </div>
 
-        {/* Requests table */}
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        {/* Table */}
+        <div className="overflow-hidden bg-white border border-gray-200 rounded-2xl shadow-sm">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full text-sm text-left text-gray-700">
+              <thead className="bg-gray-100 text-gray-600 uppercase text-xs font-semibold">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Họ và tên</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số điện thoại</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bài đăng</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày yêu cầu</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                  <th className="px-6 py-3">Tiêu đề</th>
+                  <th className="px-6 py-3">Mô tả</th>
+                  <th className="px-6 py-3 text-center">Loại</th>
+                  <th className="px-6 py-3 text-center">Ngày đăng</th>
+                  <th className="px-6 py-3 text-right">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filtered.map(req => (
-                  <tr key={req.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-gray-900">{req.id}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900">{req.requesterName}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <a href={`tel:${req.phone}`} className="text-sm text-blue-600 hover:underline">{req.phone}</a>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-xs px-2 py-1 rounded-full ${req.type === 'xe' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-                        {req.type === 'xe' ? 'Xe' : 'Pin'}
+              <tbody className="divide-y divide-gray-100">
+                {filtered.map((post) => (
+                  <tr
+                    key={post.id}
+                    className="hover:bg-gray-50 transition-colors duration-150"
+                  >
+                    {/* Tiêu đề */}
+                    <td className="px-6 py-4">
+                      <span className="font-medium text-gray-900">
+                        {post.title}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900">{req.itemTitle}</span>
+
+                    {/* Mô tả */}
+                    <td className="px-6 py-4 max-w-md truncate text-gray-600">
+                      {post.content}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-500">{new Date(req.createdAt).toLocaleDateString('vi-VN')}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${req.status === 'Đã xác nhận' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                        {req.status}
+
+                    {/* Loại */}
+                    <td className="px-6 py-4 text-center">
+                      <span
+                        className={`text-xs font-medium px-3 py-1 rounded-full ${
+                          post.title.toLowerCase().includes("pin")
+                            ? "bg-green-100 text-green-700"
+                            : "bg-blue-100 text-blue-700"
+                        }`}
+                      >
+                        {post.title.toLowerCase().includes("pin") ? "Pin" : "Xe"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
+
+                    {/* Ngày */}
+                    <td className="px-6 py-4 text-center text-gray-500">
+                      {new Date(
+                        post.createdAt || Date.now()
+                      ).toLocaleDateString("vi-VN")}
+                    </td>
+
+                    {/* Thao tác */}
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-3">
                         <button
-                          onClick={() => handleConfirm(req.id)}
-                          className="px-3 py-1.5 text-sm rounded bg-green-600 text-white hover:bg-green-700"
+                          onClick={() => handleShowList(post.id)}
+                          title="Xem chi tiết"
+                          className="p-2.5 bg-gray-900 text-white rounded-full hover:bg-gray-700 transition cursor-pointer"
                         >
-                          Xác nhận
+                          <FileText size={16} />
                         </button>
                         <button
-                          onClick={() => handleDelete(req.id)}
-                          className="px-3 py-1.5 text-sm rounded bg-red-600 text-white hover:bg-red-700"
+                          onClick={() => handleDelete(post.id)}
+                          title="Xóa bài đăng"
+                          className="p-2.5 bg-red-600 text-white rounded-full hover:bg-red-700 transition cursor-pointer"
                         >
-                          Xóa
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>
                   </tr>
                 ))}
+
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan="8" className="px-6 py-10 text-center text-gray-500">
-                      Không có yêu cầu nào phù hợp.
+                    <td
+                      colSpan="5"
+                      className="text-center text-gray-500 py-10 text-sm"
+                    >
+                      Không có bài đăng nào phù hợp.
                     </td>
                   </tr>
                 )}
@@ -131,8 +178,19 @@ export default function BuyRequests() {
         </div>
       </div>
 
+      <BuyerDialog
+          open={openDialog}
+          onClose={() => setOpenDialog(false)}
+          postId={id}
+        />
+
+      {/* Toast */}
       {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );

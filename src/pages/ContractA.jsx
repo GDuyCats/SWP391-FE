@@ -1,13 +1,48 @@
 import { useState } from 'react';
 import { FileText, Shield, ChevronRight, Check } from 'lucide-react';
+import { api } from '../services/api';
+import Toast from '../components/Toast';
 
 function ContractA() {
   const [showOTP, setShowOTP] = useState(false);
   const [otp, setOTP] = useState('');
+  const [msg, setMsg] = useState("");
+  const [toast, setToast] = useState(false)
+  const [type, setType] = useState("");
 
-  const handleSendOTP = () => {
-    setShowOTP(true);
-    alert('Mã OTP đã được gửi!');
+  async function handleSendOTP() {
+
+    try {
+      const res = await api.post("/staff/contracts/send-otps");
+      console.log(res);
+
+      if (res.status === 200) {
+        setOTP(res.data.data)
+        setType("success")
+        setMsg(res.data.message)
+      }
+    } catch (error) {
+      console.log(error);
+      const status = error?.status
+      const msg = error?.response?.data
+
+      let errorMsg = "Không thể gửi OTP";
+      setToast(true)
+      setType("error")
+
+      if (status === 400) {
+        errorMsg = msg ? msg : "Dữ liệu không hợp lệ hoặc contract không phù hợp để gửi OTP";
+      } else if (status === 401) {
+        errorMsg = msg ? msg : "Thiếu hoặc token không hợp lệ";
+      } else if (status === 403) {
+        errorMsg = msg ? msg : "Chỉ staff hoặc admin được gửi OTP";
+      } 
+      
+
+      setMsg(errorMsg)
+    }
+
+
   };
 
   const handleVerifyOTP = () => {
@@ -15,7 +50,7 @@ function ContractA() {
       alert('Vui lòng nhập đầy đủ 6 số OTP');
       return;
     }
-    
+
     alert('Xác thực thành công!');
   };
 
@@ -180,7 +215,7 @@ function ContractA() {
                       Bảo mật thông tin
                     </h3>
                     <p className="text-sm text-blue-700">
-                      Thông tin của bạn được mã hóa và bảo mật tuyệt đối. 
+                      Thông tin của bạn được mã hóa và bảo mật tuyệt đối.
                       Mã OTP sẽ được gửi trong vòng 60 giây.
                     </p>
                   </div>
@@ -190,6 +225,9 @@ function ContractA() {
           </div>
         </div>
       </div>
+      {toast && (
+        <Toast type={type} msg={msg} />
+      )}
     </div>
   );
 }
