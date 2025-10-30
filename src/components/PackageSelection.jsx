@@ -1,48 +1,14 @@
 import React, { useState } from "react";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import PlansList from "./Plans/PlansList";
 
 export default function PackageSelection() {
   const navigate = useNavigate();
   const location = useLocation();
   const listingData = location.state;
 
-  const [selectedPackage, setSelectedPackage] = useState("");
-
-  const packages = [
-    {
-      name: "Gói Bạc",
-      price: 50000,
-      color: "bg-gray-500",
-      features: ["Hiển thị 7 ngày", "Ưu tiên trung bình", "Hỗ trợ cơ bản"],
-      duration: 7,
-    },
-    {
-      name: "Gói Vàng",
-      price: 100000,
-      color: "bg-yellow-500",
-      features: [
-        "Hiển thị 15 ngày",
-        "Ưu tiên cao",
-        "Hỗ trợ 24/7",
-        "Đánh dấu nổi bật",
-      ],
-      duration: 15,
-    },
-    {
-      name: "Gói Kim Cương",
-      price: 200000,
-      color: "bg-cyan-700",
-      features: [
-        "Hiển thị 30 ngày",
-        "Ưu tiên cao nhất",
-        "Hỗ trợ VIP",
-        "Đánh dấu nổi bật",
-        "Quảng cáo đặc biệt",
-      ],
-      duration: 30,
-    },
-  ];
+  const [selectedPlan, setSelectedPlan] = useState(null);
 
   if (!listingData) {
     return (
@@ -66,13 +32,15 @@ export default function PackageSelection() {
   }
 
   const handleContinue = () => {
-    const selectedPkg = packages.find((p) => p.name === selectedPackage);
+    if (!selectedPlan) return;
     const payload = {
       ...listingData,
-      package: selectedPkg,
-      totalCost: selectedPkg.price,
+      selectedPlan,
+      planId: selectedPlan.id,
+      totalCost: selectedPlan.amount,
     };
 
+    console.log("[DEBUG] Navigating to payment with:", payload);
     navigate("/listing/payment", { state: payload });
   };
 
@@ -114,7 +82,8 @@ export default function PackageSelection() {
                 <strong>Giá:</strong> {listingData.price?.toLocaleString()} VND
               </p>
               <p>
-                <strong>Mô tả:</strong> {listingData.description || "Chưa nhập"}
+                <strong>Mô tả:</strong>{" "}
+                {listingData.content || listingData.description || "Chưa nhập"}
               </p>
 
               {listingData.type === "ev" && (
@@ -129,6 +98,11 @@ export default function PackageSelection() {
                     {listingData.condition && (
                       <p>• Tình trạng: {listingData.condition}</p>
                     )}
+                    {listingData.hasBattery && (
+                      <p className="text-green-600 font-medium">
+                        ✓ Kèm thông tin pin
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -137,11 +111,11 @@ export default function PackageSelection() {
                 <div>
                   <strong>Thông tin pin:</strong>
                   <div className="text-xs mt-1 space-y-1">
-                    {listingData.batteryCapacity && (
-                      <p>• Dung lượng: {listingData.batteryCapacity}</p>
+                    {listingData.battery_capacity && (
+                      <p>• Dung lượng: {listingData.battery_capacity}</p>
                     )}
-                    {listingData.range && (
-                      <p>• Quãng đường: {listingData.range}</p>
+                    {listingData.battery_range && (
+                      <p>• Quãng đường: {listingData.battery_range}</p>
                     )}
                     {listingData.soh && <p>• SOH: {listingData.soh}</p>}
                   </div>
@@ -150,57 +124,13 @@ export default function PackageSelection() {
             </div>
           </div>
 
-          {/* Package Selection */}
+          {/* Plans Selection */}
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
             <h2 className="text-xl font-semibold mb-4">Chọn gói đăng tin</h2>
-
-            <div className="space-y-4">
-              {packages.map((pkg) => (
-                <div
-                  key={pkg.name}
-                  onClick={() => setSelectedPackage(pkg.name)}
-                  className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${
-                    selectedPackage === pkg.name
-                      ? "border-gray-800 bg-gray-100"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-4 h-4 rounded-full border-2 ${
-                          selectedPackage === pkg.name
-                            ? "border-gray-800 bg-gray-800"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {selectedPackage === pkg.name && (
-                          <Check className="w-3 h-3 text-white" />
-                        )}
-                      </div>
-                      <h3 className="font-semibold">{pkg.name}</h3>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold">
-                        {pkg.price.toLocaleString()} VND
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {pkg.duration} ngày
-                      </p>
-                    </div>
-                  </div>
-
-                  <ul className="text-sm space-y-1 ml-7">
-                    {pkg.features.map((feature, index) => (
-                      <li key={index} className="flex items-center gap-2">
-                        <Check className="w-3 h-3 text-gray-600" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
+            <PlansList
+              onSelect={setSelectedPlan}
+              selectedPlanId={selectedPlan?.id}
+            />
           </div>
         </div>
 
@@ -213,20 +143,17 @@ export default function PackageSelection() {
           </button>
 
           <div className="flex items-center gap-4">
-            {selectedPackage && (
+            {selectedPlan && (
               <div className="text-right">
                 <p className="text-sm text-gray-500">Tổng chi phí:</p>
                 <p className="text-xl font-bold text-gray-800">
-                  {packages
-                    .find((p) => p.name === selectedPackage)
-                    ?.price.toLocaleString()}{" "}
-                  VND
+                  {selectedPlan.amount?.toLocaleString()} VND
                 </p>
               </div>
             )}
             <button
               onClick={handleContinue}
-              disabled={!selectedPackage}
+              disabled={!selectedPlan}
               className="flex items-center gap-2 bg-gray-800 hover:bg-gray-900 disabled:bg-gray-400 disabled:cursor-not-allowed px-6 py-2 rounded-md font-semibold text-white"
             >
               Tiếp tục <ArrowRight size={18} />
