@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Toast from "../components/Toast";
 import { FileText, Trash2 } from "lucide-react";
 import { api } from "../services/api";
-import BuyerDialog from "../components/Home/BuyerDialog";
+import BuyerDialog from "../components/BuyerDialog";
 
 export default function BuyRequests() {
   const [posts, setPosts] = useState([]);

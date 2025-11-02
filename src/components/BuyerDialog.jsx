@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { api } from "../../services/api";
+import { api } from "../services/api";
 import { X, ClipboardList, Calendar, User, CheckCircle } from "lucide-react";
-import Toast from "../../components/Toast";
+import Toast from "./Toast";
 
 function BuyerDialog({ open, onClose, postId }) {
   const [buyers, setBuyers] = useState([]);

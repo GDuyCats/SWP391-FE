@@ -22,10 +22,6 @@ const AdminApprove = () => {
     author: ''
   });
 
-  useEffect(() => {
-    fetchPosts();
-  }, []);
-
   const fetchPosts = async () => {
     try {
       setLoading(true);
@@ -101,6 +97,7 @@ const AdminApprove = () => {
         setToast(true)
         setType("success")
         setMessage(resp.data.message)
+        fetchPosts();
 
       }
 
@@ -126,16 +123,13 @@ const AdminApprove = () => {
         errorMsg = msg ? msg : 'Lỗi 500: Lỗi server nội bộ';
         // setTimeout(() => navigate('/login'), 2000);
       }
-     
+
       setMessage(errorMsg);
     } finally {
       setTimeout(() => setToast(false), 3000);
     }
 
   };
-
-  
-  
 
   const renderStatus = (post) => {
     const isVerified = post.verifyStatus === 'verify';
@@ -164,6 +158,10 @@ const AdminApprove = () => {
     if (category === 'battery') return 'Pin';
     return category;
   };
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
