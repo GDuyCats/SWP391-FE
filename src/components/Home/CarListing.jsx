@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../../services/api";
 import Toast from "../Toast";
 import { useNavigate } from "react-router-dom";
+import { Star } from "lucide-react";
 
 const CarListing = () => {
   const navigate = useNavigate();
@@ -11,39 +12,56 @@ const CarListing = () => {
   const [toast, setToast] = useState(false);
   const [type, setType] = useState("");
 
+  const renderVipBadge = (post) => {
+    if (!post.isVip || !post.vipTier) return null;
+
+    const tiers = {
+      silver: { label: "VIP Bạc", color: "text-gray-700", bg: "bg-gray-100" },
+      gold: { label: "VIP Vàng", color: "text-yellow-700", bg: "bg-yellow-100" },
+      platinum: { label: "VIP Bạch kim", color: "text-cyan-700", bg: "bg-cyan-100" },
+      diamond: { label: "VIP Kim cương", color: "text-purple-700", bg: "bg-purple-100" }
+    };
+
+    const info = tiers[post.vipTier.toLowerCase()] || tiers.silver;
+
+    return (
+      <div className={`absolute top-4 left-4 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold shadow-md ${info.bg} ${info.color}`}>
+        <Star className="w-4 h-4 fill-current" />
+        {info.label}
+      </div>
+    );
+  };
+
   async function handleRequest(id) {
     console.log(id);
-
     try {
       const res = await api.post("/PurchaseRequests", {
         postId: id,
         message: "Tôi muốn mua xe này"
-
       });
       console.log(res);
       if (res.status === 201) {
-        setToast(true)
-        setType("success")
-        setMsg(res.data.message)
+        setToast(true);
+        setType("success");
+        setMsg(res.data.message);
       }
     } catch (error) {
       console.log(error);
-      const status = error?.status;
-      const msg = error?.response?.data?.message
+      const status = error?.response?.status;
+      const msg = error?.response?.data?.message;
       let errorMsg = 'Không thể yêu cầu mua xe';
-
-      setToast(true)
-      setType("error")
+      setToast(true);
+      setType("error");
       if (status === 400) {
-        errorMsg = msg ? msg : "Bài đăng chưa được xác thực"
+        errorMsg = msg ? msg : "Bài đăng chưa được xác thực";
       } else if (status === 403) {
-        errorMsg = msg ? msg : "Không đủ quyền (Admin/Staff không được phép"
+        errorMsg = msg ? msg : "Không đủ quyền (Admin/Staff không được phép)";
       } else if (status === 404) {
-        errorMsg = msg ? msg : "Không tìm thấy bài đăng"
+        errorMsg = msg ? msg : "Không tìm thấy bài đăng";
       } else if (status === 409) {
-        errorMsg = msg ? msg : "Người mua đã có hợp đồng đang hiệu lực cho bài này"
+        errorMsg = msg ? msg : "Người mua đã có hợp đồng đang hiệu lực cho bài này";
       } else if (status === 500) {
-        errorMsg = msg ? msg : "Lỗi máy chủ"
+        errorMsg = msg ? msg : "Lỗi máy chủ";
         setTimeout(() => navigate('/login'), 2000);
       }
       setMsg(errorMsg);
@@ -54,7 +72,7 @@ const CarListing = () => {
 
   async function getAllPosts() {
     try {
-      const res = await api.get("/");
+      const res = await api.get("/posts");
       console.log(res);
       if (res.status === 200) {
         setPosts(res.data.data);
@@ -76,9 +94,6 @@ const CarListing = () => {
     });
   };
 
-  console.log(posts);
-  
-
   return (
     <section className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -97,8 +112,7 @@ const CarListing = () => {
           {posts.map((post) => (
             <div
               key={post.id}
-              className={`relative bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 ${post.isVip ? "border-2 border-yellow-400" : ""
-                }`}
+              className="relative bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300"
             >
               {/* Ảnh */}
               <div className="relative">
@@ -112,12 +126,8 @@ const CarListing = () => {
                   className="w-full h-56 object-cover"
                 />
 
-                {/* Huy hiệu VIP */}
-                {post.isVip && (
-                  <div className="absolute top-4 left-4 bg-yellow-400 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-md">
-                    VIP
-                  </div>
-                )}
+                {/* === GỘP VIP + TIER THÀNH 1 BADGE === */}
+                {renderVipBadge(post)}
               </div>
 
               {/* Nội dung */}
@@ -128,7 +138,6 @@ const CarListing = () => {
                 <p className="text-gray-600 mb-4 line-clamp-2">
                   {post.content}
                 </p>
-
                 <p className="text-gray-600 mb-4 line-clamp-2">
                   {post.username}
                 </p>
@@ -143,12 +152,8 @@ const CarListing = () => {
 
                 {/* Nút */}
                 <div className="flex space-x-3">
-                  <Link
-                    to={`/listing/ev/${post.id}`}
-                    state={{ post }}
-                    className="flex-1"
-                  >
-                    <button className="w-full bg-gray-900 text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors font-medium">
+                  <Link to={`/listing/ev/${post.id}`} className="flex-1">
+                    <button className="w-full bg-gray-900 text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors font-medium text-sm">
                       Xem chi tiết
                     </button>
                   </Link>
@@ -163,15 +168,8 @@ const CarListing = () => {
             </div>
           ))}
         </div>
-
-        {/* Nút xem thêm */}
-        <div className="text-center mt-12">
-          <button className="bg-gray-900 text-white px-8 py-3 rounded-md hover:bg-gray-800 transition-colors font-medium">
-            Xem tất cả xe điện
-          </button>
-        </div>
-
       </div>
+
       {toast && msg && (
         <Toast type={type} msg={msg} />
       )}

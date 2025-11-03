@@ -37,6 +37,7 @@ import LayoutAdmin from "./components/LayoutAdmin";
 import PostManagement from "./pages/PostManagement";
 import BuyerContractManagement from "./pages/BuyerContractManagement";
 import SellerContractManagement from "./pages/SellerContractManagement";
+import RequestManagement from "./components/RequestManagement";
 function App() {
   return (
     <BrowserRouter>
@@ -83,6 +84,7 @@ function App() {
         <Route element={<LayoutAdmin />}>
           <Route path="/users" element={<Users />} />
           <Route path="/adminapprove" element={<AdminApprove />} />
+          <Route path="/request-management" element={<RequestManagement />} />
         </Route>
 
         <Route path="/admin/forbidden" element={<Forbidden />} />
