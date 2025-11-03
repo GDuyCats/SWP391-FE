@@ -1,3 +1,4 @@
+// src/pages/Admin/TransactionDetail.jsx
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Send, CheckCircle, DollarSign, User } from "lucide-react";
@@ -6,7 +7,7 @@ import AdminSidebar from "../../components/Admin/AdminSidebar";
 import Toast from "../../components/Toast";
 import { api } from "../../services/api";
 
-/* ===== Utils tiền tệ ===== */
+/* ===== Utils ===== */
 const onlyDigits = (s) => (s || "").replace(/[^\d]/g, "");
 const toNumber = (s) => {
   const clean = onlyDigits(s);
@@ -17,29 +18,31 @@ const formatCurrency = (input) => {
   return new Intl.NumberFormat("vi-VN").format(n);
 };
 
-/* ===== Input tiền tệ ===== */
-const FeeInputField = ({ label, value, onChange, error, required = true }) => (
+/* ===== % input ===== */
+const PercentInputField = ({ label, value, onChange, error }) => (
   <div className="mb-4">
     <label className="block text-sm font-medium text-gray-700 mb-2">
-      {label} {required && <span className="text-red-500">*</span>}
+      {label} <span className="text-red-500">*</span>
     </label>
     <div className="relative">
       <input
         type="text"
-        inputMode="numeric"
+        inputMode="decimal"
         autoComplete="off"
         value={value ?? ""}
-        onChange={(e) => onChange(onlyDigits(e.target.value))}
+        onChange={(e) => {
+          const val = e.target.value.replace(/[^\d.]/g, "");
+          const parts = val.split(".");
+          if (parts.length > 2) return;
+          onChange(val);
+        }}
         className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
           error ? "border-red-500" : "border-gray-300"
         }`}
-        placeholder="Nhập số tiền (VNĐ)"
+        placeholder="Nhập % (ví dụ: 5.5)"
       />
-      <DollarSign className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
+      <span className="absolute right-3 top-2.5 text-gray-500 font-medium">%</span>
     </div>
-    {value && value !== "" && (
-      <p className="mt-1 text-sm text-gray-500">{formatCurrency(value)} VNĐ</p>
-    )}
     {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
   </div>
 );
@@ -49,203 +52,302 @@ export default function TransactionDetail() {
   const location = useLocation();
   const recordData = location.state?.record;
 
-  /* ===== Fees ===== */
-  const [buyerFees, setBuyerFees] = useState({
-    notarizationFee: "",
-    commissionFee: "",
-    registrationFee: "",
-    licensePlateFee: "",
-    inspectionFee: "",
-  });
-  const [sellerFees, setSellerFees] = useState({
-    notarizationFee: "",
-    commissionFee: "",
-    registrationFee: "",
-    licensePlateFee: "",
-    inspectionFee: "",
-  });
+  /* ===== state ===== */
+  const [buyerFeePercent, setBuyerFeePercent] = useState("");
+  const [sellerFeePercent, setSellerFeePercent] = useState("");
 
-  /* ===== Flow/UI ===== */
+  const [carPriceInput, setCarPriceInput] = useState("");
+  const [isEditingPrice, setIsEditingPrice] = useState(false);
+  const [finalCarPrice, setFinalCarPrice] = useState(null);
+
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [buyerConfirmed, setBuyerConfirmed] = useState(false);
   const [sellerConfirmed, setSellerConfirmed] = useState(false);
   const [buyerRecordSent, setBuyerRecordSent] = useState(false);
   const [sellerRecordSent, setSellerRecordSent] = useState(false);
-
   const [buyerSending, setBuyerSending] = useState(false);
   const [sellerSending, setSellerSending] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
   const [finalSending, setFinalSending] = useState(false);
-  const [showFinalConfirm, setShowFinalConfirm] = useState(false);
   const [toast, setToast] = useState(null);
   const [errors, setErrors] = useState({});
+  const [showFinalConfirm, setShowFinalConfirm] = useState(false);
 
-  /* ===== BE paths ===== */
-  const SEND_RECORD_PATH_ENV = (import.meta.env.VITE_SEND_RECORD_PATH || "").trim();
+  /* ===== endpoints ===== */
   const SEND_OTP_PATH = "/staff/contracts/send-otp";
   const SEND_FINAL_PATH = "/staff/contracts/send-final";
+  const SEND_DRAFT = "/staff/contracts/send-draft";
 
-  /* ===== Helpers ===== */
-  const handleBuyerFeeChange = (field, value) => {
-    setBuyerFees((prev) => ({ ...prev, [field]: value }));
-    if (errors[`buyer_${field}`]) setErrors((p) => ({ ...p, [`buyer_${field}`]: null }));
+  /* ===== FE deep-links ===== */
+  const FE_ORIGIN = (import.meta.env.VITE_FE_ORIGIN || window.location.origin).replace(/\/$/, "");
+  const linkForA = (id) => `${FE_ORIGIN}/contract-a?contractId=${id}`;
+  const linkForB = (id) => `${FE_ORIGIN}/contract-b?contractId=${id}`;
+
+  /* ===== helpers ===== */
+  const getCarPrice = () => {
+    if (finalCarPrice !== null) return finalCarPrice;
+    if (!recordData?.price) return 0;
+    return typeof recordData.price === "number" ? recordData.price : toNumber(String(recordData.price));
   };
-  const handleSellerFeeChange = (field, value) => {
-    setSellerFees((prev) => ({ ...prev, [field]: value }));
-    if (errors[`seller_${field}`]) setErrors((p) => ({ ...p, [`seller_${field}`]: null }));
+
+  const handleConfirmPrice = () => {
+    const price = toNumber(carPriceInput);
+    if (price <= 0) {
+      setToast({ type: "error", message: "Vui lòng nhập giá trị xe hợp lệ" });
+      return;
+    }
+    setFinalCarPrice(price);
+    setIsEditingPrice(false);
+    setToast({ type: "success", message: "Đã chốt giá trị xe" });
   };
-  const calculateTotal = (feesObj) =>
-    Object.values(feesObj).reduce((sum, v) => sum + toNumber(v), 0);
+
+  const handleEditPrice = () => {
+    const currentPrice = getCarPrice();
+    setCarPriceInput(String(currentPrice));
+    setIsEditingPrice(true);
+  };
+
+  const calculateFeeFromPercent = (percent) => {
+    const carPrice = getCarPrice();
+    const p = parseFloat(percent || 0);
+    if (isNaN(p) || p < 0) return 0;
+    return Math.round((carPrice * p) / 100);
+  };
+  const getBuyerFee = () => calculateFeeFromPercent(buyerFeePercent);
+  const getSellerFee = () => calculateFeeFromPercent(sellerFeePercent);
 
   const validateFees = () => {
     const newErrors = {};
-    Object.keys(buyerFees).forEach((k) => {
-      const v = toNumber(buyerFees[k]);
-      if (Number.isNaN(v) || v < 0) newErrors[`buyer_${k}`] = "Vui lòng nhập số tiền hợp lệ";
-    });
-    Object.keys(sellerFees).forEach((k) => {
-      const v = toNumber(sellerFees[k]);
-      if (Number.isNaN(v) || v < 0) newErrors[`seller_${k}`] = "Vui lòng nhập số tiền hợp lệ";
-    });
+    const buyerP = parseFloat(buyerFeePercent || 0);
+    if (isNaN(buyerP) || buyerP < 0 || buyerP > 100) newErrors.buyerFeePercent = "Vui lòng nhập % hợp lệ (0-100)";
+    const sellerP = parseFloat(sellerFeePercent || 0);
+    if (isNaN(sellerP) || sellerP < 0 || sellerP > 100) newErrors.sellerFeePercent = "Vui lòng nhập % hợp lệ (0-100)";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const numericFees = (f) => ({
-    notarizationFee: toNumber(f.notarizationFee),
-    commissionFee: toNumber(f.commissionFee),
-    registrationFee: toNumber(f.registrationFee),
-    licensePlateFee: toNumber(f.licensePlateFee),
-    inspectionFee: toNumber(f.inspectionFee),
-  });
+  /* ===== Build Contract URL kèm số liệu ===== */
+  const buildBuyerContractUrl = () => {
+    const price = getCarPrice();
+    const buyerPercent = Number(buyerFeePercent || 0);
+    const buyerFee = Math.round((price * buyerPercent) / 100);
+    const buyerTotal = price + buyerFee;
 
-  /* ===== Gửi hồ sơ: thử nhiều URL, 404 thì bỏ qua ===== */
-  const trySendRecord = async (party, feesObj) => {
-    const base = SEND_RECORD_PATH_ENV || "";
-    const candidates = [
-      base && base, // nguyên vẹn nếu đã cấu hình
-      `/staff/contracts/send-record/${party}`,
-      `/staff/contracts/send-record`,
-      `/contracts/send-record/${party}`,
-      `/contracts/send-record`,
-    ].filter(Boolean);
-
-    const payloadFor = (url) =>
-      url.endsWith("/send-record") ? { contractId: recordData.id, party, fees: feesObj }
-        : { contractId: recordData.id, fees: feesObj };
-
-    for (const url of candidates) {
-      try {
-        const res = await api.post(url, payloadFor(url));
-        if (res?.status >= 200 && res?.status < 300) {
-          return { ok: true, msg: res?.data?.message };
-        }
-      } catch (e) {
-        const code = e?.response?.status;
-        if (code === 404) continue;
-        const m = e?.response?.data?.message;
-        return { ok: false, code, msg: m || `Gửi hồ sơ (${party}) thất bại` };
-      }
-    }
-    return { ok: true, local: true, msg: `BE chưa có endpoint gửi hồ sơ (${party}). Đã đánh dấu client-side.` };
+    const url = new URL(linkForA(recordData.id));
+    url.searchParams.set("contractId", String(recordData.id));
+    url.searchParams.set("price", String(price));
+    url.searchParams.set("buyerPercent", String(buyerPercent));
+    url.searchParams.set("buyerFee", String(buyerFee));
+    url.searchParams.set("buyerTotal", String(buyerTotal));
+    return url.toString();
   };
 
-  /* ===== Send record Buyer ===== */
-  const handleSendRecordToBuyer = async () => {
+  const buildSellerContractUrl = () => {
+    const price = getCarPrice();
+    const sellerPercent = Number(sellerFeePercent || 0);
+    const sellerFee = Math.round((price * sellerPercent) / 100);
+    const sellerTotal = price - sellerFee;
+
+    const url = new URL(linkForB(recordData.id));
+    url.searchParams.set("contractId", String(recordData.id));
+    url.searchParams.set("price", String(price));
+    url.searchParams.set("sellerPercent", String(sellerPercent));
+    url.searchParams.set("sellerFee", String(sellerFee));
+    url.searchParams.set("sellerTotal", String(sellerTotal));
+    return url.toString();
+  };
+
+  /* ===== Email HTML đơn giản ===== */
+  const makeEmailHtml = ({ title, lines = [], ctaUrl, ctaLabel }) => {
+    const li = lines.map((l) => `<li>${l}</li>`).join("");
+    return `
+    <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111">
+      <h2 style="margin:0 0 8px">${title}</h2>
+      <ul style="padding-left:18px;margin:8px 0">${li}</ul>
+      <p style="margin:16px 0">
+        <a href="${ctaUrl}" target="_blank" rel="noopener"
+           style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;
+                  padding:12px 18px;border-radius:10px;font-weight:600">
+          ${ctaLabel}
+        </a>
+      </p>
+      <p style="color:#555;font-size:12px">Nếu nút không bấm được, mở liên kết: ${ctaUrl}</p>
+    </div>`;
+  };
+
+  /* ===== DỮ LIỆU EMAIL CHO BUYER/SELLER – KHÔNG CẦN SỬA BE ===== */
+  const buildEmailFor = (aud) => {
+    const price = getCarPrice();
+    const buyerPercent = Number(buyerFeePercent || 0);
+    const sellerPercent = Number(sellerFeePercent || 0);
+    const buyerFee = Math.round((price * buyerPercent) / 100);
+    const sellerFee = Math.round((price * sellerPercent) / 100);
+    const buyerTotal = price + buyerFee;
+    const sellerTotal = price - sellerFee;
+
+    if (aud === "buyer") {
+      const ctaUrl = buildBuyerContractUrl();
+      const subject = `[EV] Hợp đồng #${recordData.id} – Bên A xác nhận | ${buyerPercent}% | Phí ${formatCurrency(
+        buyerFee
+      )}đ | Tổng ${formatCurrency(buyerTotal)}đ`;
+      const lines = [
+        `Giá chốt: <b>${formatCurrency(price)} VNĐ</b>`,
+        `% phí Buyer: <b>${buyerPercent}%</b>`,
+        `Phí Buyer: <b>${formatCurrency(buyerFee)} VNĐ</b>`,
+        `Tổng Buyer thanh toán: <b>${formatCurrency(buyerTotal)} VNĐ</b>`,
+      ];
+      return {
+        toRole: "buyer",
+        subject,
+        text: [
+          `Giá chốt: ${formatCurrency(price)} VNĐ`,
+          `% phí Buyer: ${buyerPercent}%`,
+          `Phí Buyer: ${formatCurrency(buyerFee)} VNĐ`,
+          `Tổng Buyer thanh toán: ${formatCurrency(buyerTotal)} VNĐ`,
+          `Mở Contract A: ${ctaUrl}`,
+        ].join("\n"),
+        html: makeEmailHtml({
+          title: `Hồ sơ #${recordData.id} – Bên A`,
+          lines,
+          ctaUrl,
+          ctaLabel: "Mở Contract A và nhập OTP",
+        }),
+        ctaUrl,
+      };
+    }
+
+    const ctaUrl = buildSellerContractUrl();
+    const subject = `[EV] Hợp đồng #${recordData.id} – Bên B xác nhận | ${sellerPercent}% | Phí ${formatCurrency(
+      sellerFee
+    )}đ | Nhận ${formatCurrency(sellerTotal)}đ`;
+    const lines = [
+      `Giá chốt: <b>${formatCurrency(price)} VNĐ</b>`,
+      `% phí Seller: <b>${sellerPercent}%</b>`,
+      `Phí Seller: <b>${formatCurrency(sellerFee)} VNĐ</b>`,
+      `Tổng Seller nhận: <b>${formatCurrency(sellerTotal)} VNĐ</b>`,
+    ];
+    return {
+      toRole: "seller",
+      subject,
+      text: [
+        `Giá chốt: ${formatCurrency(price)} VNĐ`,
+        `% phí Seller: ${sellerPercent}%`,
+        `Phí Seller: ${formatCurrency(sellerFee)} VNĐ`,
+        `Tổng Seller nhận: ${formatCurrency(sellerTotal)} VNĐ`,
+        `Mở Contract B: ${ctaUrl}`,
+      ].join("\n"),
+      html: makeEmailHtml({
+        title: `Hồ sơ #${recordData.id} – Bên B`,
+        lines,
+        ctaUrl,
+        ctaLabel: "Mở Contract B và nhập OTP",
+      }),
+      ctaUrl,
+    };
+  };
+
+  const buildDraftPayload = (aud) => {
+    const price = getCarPrice();
+    const email = buildEmailFor(aud);
+    return {
+      contractId: recordData.id,
+      audience: aud, // "buyer" | "seller"
+      finalPrice: price,
+      buyerFeePercent: Number(buyerFeePercent || 0),
+      sellerFeePercent: Number(sellerFeePercent || 0),
+
+      // Trường phẳng để BE forward email ngay cả khi không đọc nested
+      toRole: email.toRole,
+      subject: email.subject,
+      text: email.text,
+      html: email.html,
+      ctaUrl: email.ctaUrl,
+      sendMode: "html+text",
+      contentType: "text/html",
+    };
+  };
+
+  /* ===== gửi dự thảo ===== */
+  const sendDraftOne = async (aud) => {
+    const payload = buildDraftPayload(aud);
+    try {
+      const res = await api.post(SEND_DRAFT, payload);
+      return res;
+    } catch (e) {
+      console.error("sendDraftOne error", {
+        status: e?.response?.status,
+        url: api?.defaults?.baseURL ? api.defaults.baseURL + SEND_DRAFT : SEND_DRAFT,
+        data: e?.response?.data,
+      });
+      throw e;
+    }
+  };
+
+  const handleSendRecordToBoth = async () => {
     if (!recordData?.id) {
       setToast({ type: "error", message: "Thiếu contractId" });
       return;
     }
+    if (finalCarPrice === null) {
+      setToast({ type: "error", message: "Vui lòng chốt giá trị xe trước khi gửi" });
+      return;
+    }
     if (!validateFees()) {
-      setToast({ type: "error", message: "Vui lòng điền đủ phí của Buyer/Seller" });
+      setToast({ type: "error", message: "Vui lòng điền % phí hợp lệ" });
       return;
     }
     setBuyerSending(true);
-    try {
-      const r = await trySendRecord("buyer", numericFees(buyerFees));
-      if (!r.ok) {
-        let msg = r.msg;
-        if (r.code === 401) msg = "Unauthorized";
-        if (r.code === 403) msg = "Không có quyền";
-        setToast({ type: "error", message: msg });
-        return;
-      }
-      setBuyerRecordSent(true);
-      setToast({ type: "success", message: r.msg || "Đã gửi hồ sơ cho người mua" });
-    } finally {
-      setBuyerSending(false);
-    }
-  };
-
-  /* ===== Send record Seller ===== */
-  const handleSendRecordToSeller = async () => {
-    if (!recordData?.id) {
-      setToast({ type: "error", message: "Thiếu contractId" });
-      return;
-    }
-    if (!validateFees()) {
-      setToast({ type: "error", message: "Vui lòng điền đủ phí của Buyer/Seller" });
-      return;
-    }
     setSellerSending(true);
     try {
-      const r = await trySendRecord("seller", numericFees(sellerFees));
-      if (!r.ok) {
-        let msg = r.msg;
-        if (r.code === 401) msg = "Unauthorized";
-        if (r.code === 403) msg = "Không có quyền";
-        setToast({ type: "error", message: msg });
-        return;
-      }
+      await Promise.all([sendDraftOne("buyer"), sendDraftOne("seller")]);
+      setBuyerRecordSent(true);
       setSellerRecordSent(true);
-      setToast({ type: "success", message: r.msg || "Đã gửi hồ sơ cho người bán" });
+      setToast({ type: "success", message: "Đã gửi hồ sơ cho người mua và người bán" });
+    } catch (error) {
+      const s = error?.response?.status;
+      const m = error?.response?.data?.message;
+      let msg = m || "Gửi hợp đồng dự thảo thất bại";
+      if (s === 400) msg = m || "Trạng thái không phù hợp hoặc thiếu dữ liệu";
+      else if (s === 401) msg = m || "Thiếu/sai token";
+      else if (s === 403) msg = m || "Không phải staff phụ trách";
+      else if (s === 404) msg = m || "Không tìm thấy endpoint hoặc hợp đồng";
+      else if (s === 500) msg = m || "Lỗi máy chủ";
+      setToast({ type: "error", message: msg });
     } finally {
+      setBuyerSending(false);
       setSellerSending(false);
     }
   };
 
-  /* ===== Gửi OTP: KHÔNG ràng buộc đã gửi hồ sơ ===== */
+  /* ===== OTP và hoàn tất ===== */
   const handleSendOtpCode = async () => {
     if (!recordData?.id) {
       setToast({ type: "error", message: "Thiếu contractId. Không thể gửi OTP" });
       return;
     }
-
-    // Cảnh báo nếu chưa gửi đủ hồ sơ, nhưng vẫn cho phép gửi.
-    if (!buyerRecordSent || !sellerRecordSent) {
-      const ok = window.confirm(
-        "Bạn chưa gửi đủ hồ sơ cho Buyer/Seller. Vẫn gửi OTP?"
-      );
-      if (!ok) return;
-    }
-
     setOtpSending(true);
     try {
       const res = await api.post(SEND_OTP_PATH, { contractId: recordData.id });
       if (res?.status >= 200 && res?.status < 300) {
         setOtpSent(true);
-        setToast({
-          type: "success",
-          message: res?.data?.message || "Đã gửi OTP đến Buyer và Seller",
-        });
+        setToast({ type: "success", message: res?.data?.message || "Đã gửi OTP" });
       }
     } catch (error) {
       const s = error?.response?.status;
       const m = error?.response?.data?.message;
       let msg = m || "Gửi OTP thất bại";
       if (s === 400) msg = m || "Thiếu hoặc contractId không hợp lệ";
-      else if (s === 401) msg = m || "Unauthorized. Đăng nhập staff/admin";
-      else if (s === 403) msg = m || "Chỉ staff hoặc admin được phép gửi OTP";
+      else if (s === 401) msg = m || "Unauthorized";
+      else if (s === 403) msg = m || "Chỉ staff/admin được phép";
       else if (s === 404) msg = m || "Không tìm thấy hợp đồng hoặc email";
-      else if (s === 500) msg = m || "Lỗi máy chủ hoặc email";
+      else if (s === 500) msg = m || "Lỗi máy chủ";
       setToast({ type: "error", message: msg });
     } finally {
       setOtpSending(false);
     }
   };
 
-  /* ===== Gửi hợp đồng hoàn tất ===== */
   const handleFinalConfirmYes = async () => {
     if (!recordData?.id) {
       setToast({ type: "error", message: "Thiếu contractId" });
@@ -254,16 +356,11 @@ export default function TransactionDetail() {
     setFinalSending(true);
     try {
       const res = await api.post(SEND_FINAL_PATH, { contractId: recordData.id });
-      setToast({
-        type: "success",
-        message: res?.data?.message || "Đã gửi hợp đồng hoàn tất. Trạng thái chuyển completed",
-      });
+      setToast({ type: "success", message: res?.data?.message || "Đã gửi hợp đồng hoàn tất" });
       setShowFinalConfirm(false);
       setTimeout(() => {
-        navigate("/transactionsuccess", {
-          state: { record: { ...recordData, status: "completed" } },
-        });
-      }, 1200);
+        navigate("/transactionsuccess", { state: { record: { ...recordData, status: "completed" } } });
+      }, 800);
     } catch (error) {
       const s = error?.response?.status;
       const m = error?.response?.data?.message;
@@ -280,24 +377,6 @@ export default function TransactionDetail() {
     }
   };
 
-  /* ===== Cho mở modal xác nhận cuối khi đã có OTP và 2 bên đã tick xác nhận ===== */
-  const handleVerifyOtp = () => {
-    if (!otpSent) {
-      setToast({ type: "error", message: "Chưa gửi OTP" });
-      return;
-    }
-    if (!buyerConfirmed) {
-      setToast({ type: "error", message: "Chờ người mua xác nhận hồ sơ" });
-      return;
-    }
-    if (!sellerConfirmed) {
-      setToast({ type: "error", message: "Chờ người bán xác nhận hồ sơ" });
-      return;
-    }
-    setShowFinalConfirm(true);
-  };
-
-  /* ===== Fallback thiếu record ===== */
   if (!recordData) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -307,10 +386,7 @@ export default function TransactionDetail() {
           <main className="flex-1 py-8 px-6">
             <div className="max-w-7xl mx-auto text-center">
               <p className="text-gray-600 mb-4">Không tìm thấy thông tin hồ sơ</p>
-              <button
-                onClick={() => navigate("/transactionrecords")}
-                className="text-blue-600 hover:underline"
-              >
+              <button onClick={() => navigate("/transactionrecords")} className="text-blue-600 hover:underline">
                 Quay lại danh sách hồ sơ
               </button>
             </div>
@@ -320,7 +396,11 @@ export default function TransactionDetail() {
     );
   }
 
-  /* ===== UI ===== */
+  /* ===== mask đối tác sau khi gửi hồ sơ ===== */
+  const maskText = "— ẩn sau khi gửi hồ sơ cho đối tác —";
+  const hideBuyerDetails = sellerRecordSent;
+  const hideSellerDetails = buyerRecordSent;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminHeader />
@@ -354,14 +434,86 @@ export default function TransactionDetail() {
                   <p className="font-semibold text-gray-900">{recordData.carModel}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Giá trị giao dịch</p>
-                  <p className="font-semibold text-blue-600 text-lg">
+                  <p className="text-sm text-gray-500">Giá trị giao dịch ban đầu</p>
+                  <p className="font-semibold text-gray-600 text-lg">
                     {typeof recordData.price === "number"
                       ? `${new Intl.NumberFormat("vi-VN").format(recordData.price)} VNĐ`
                       : recordData.price}
                   </p>
                 </div>
               </div>
+            </div>
+
+            {/* Chốt giá trị xe */}
+            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg shadow-sm border-2 border-yellow-300 p-6 mb-6">
+              <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <DollarSign className="w-6 h-6 mr-2 text-yellow-600" />
+                Chốt giá trị xe cuối cùng
+              </h2>
+
+              {!isEditingPrice ? (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-2">
+                      {finalCarPrice !== null ? "Giá trị xe đã được chốt:" : "Chưa chốt giá trị xe cuối cùng"}
+                    </p>
+                    <p className="text-3xl font-bold text-yellow-700">{formatCurrency(getCarPrice())} VNĐ</p>
+                    {finalCarPrice !== null && (
+                      <p className="text-xs text-green-600 mt-1 flex items-center">
+                        <CheckCircle className="w-4 h-4 mr-1" /> Đã chốt giá
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleEditPrice}
+                    className="flex items-center gap-2 bg-yellow-600 text-white px-6 py-3 rounded-lg hover:bg-yellow-700 transition-colors font-medium"
+                  >
+                    <DollarSign className="w-5 h-5" />
+                    {finalCarPrice !== null ? "Chỉnh sửa giá" : "Chốt giá"}
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nhập giá trị xe cuối cùng <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-3 items-start">
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        value={carPriceInput}
+                        onChange={(e) => setCarPriceInput(onlyDigits(e.target.value))}
+                        className="w-full px-4 py-3 border-2 border-yellow-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-lg"
+                        placeholder="Nhập giá trị xe (VNĐ)"
+                      />
+                      {carPriceInput && (
+                        <p className="mt-2 text-sm text-gray-600">
+                          Giá trị: <span className="font-semibold text-yellow-700">{formatCurrency(carPriceInput)} VNĐ</span>
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleConfirmPrice}
+                        className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                      >
+                        <CheckCircle className="w-5 h-5" /> Xác nhận
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCarPriceInput("");
+                          setIsEditingPrice(false);
+                        }}
+                        className="px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                      >
+                        Hủy
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Fees */}
@@ -378,26 +530,36 @@ export default function TransactionDetail() {
                   </div>
                 </div>
                 <div className="p-6">
-                  <FeeInputField label="Phí công chứng" value={buyerFees.notarizationFee}
-                    onChange={(v) => handleBuyerFeeChange("notarizationFee", v)}
-                    error={errors.buyer_notarizationFee}/>
-                  <FeeInputField label="Phí hoa hồng" value={buyerFees.commissionFee}
-                    onChange={(v) => handleBuyerFeeChange("commissionFee", v)}
-                    error={errors.buyer_commissionFee}/>
-                  <FeeInputField label="Phí trước bạ" value={buyerFees.registrationFee}
-                    onChange={(v) => handleBuyerFeeChange("registrationFee", v)}
-                    error={errors.buyer_registrationFee}/>
-                  <FeeInputField label="Phí đăng ký" value={buyerFees.licensePlateFee}
-                    onChange={(v) => handleBuyerFeeChange("licensePlateFee", v)}
-                    error={errors.buyer_licensePlateFee}/>
-                  <FeeInputField label="Phí cấp biển/sang tên" value={buyerFees.inspectionFee}
-                    onChange={(v) => handleBuyerFeeChange("inspectionFee", v)}
-                    error={errors.buyer_inspectionFee}/>
+                  <PercentInputField
+                    label="Phí phải chịu (% trên giá trị xe)"
+                    value={buyerFeePercent}
+                    onChange={(v) => {
+                      setBuyerFeePercent(v);
+                      if (errors.buyerFeePercent) setErrors((p) => ({ ...p, buyerFeePercent: null }));
+                    }}
+                    error={errors.buyerFeePercent}
+                  />
+                  <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                    <div className="text-sm text-gray-600 mb-2">
+                      Giá trị xe: <span className="font-semibold text-gray-900">{formatCurrency(getCarPrice())} VNĐ</span>
+                    </div>
+                    <div className="text-sm text-gray-600 mb-1">
+                      Công thức: <span className="font-medium">{(parseFloat(buyerFeePercent || 0) || 0)}%</span> ×{" "}
+                      <span className="font-medium">{formatCurrency(getCarPrice())}</span> ={" "}
+                      <span className="font-semibold text-blue-600">{formatCurrency(getBuyerFee())} VNĐ</span>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Phí phải trả:{" "}
+                      <span className="font-semibold text-blue-600 text-lg">
+                        {hideBuyerDetails ? maskText : `${formatCurrency(getBuyerFee())} VNĐ`}
+                      </span>
+                    </div>
+                  </div>
                   <div className="mt-6 pt-4 border-t border-gray-200">
                     <div className="flex justify-between items-center">
-                      <span className="text-lg font-semibold text-gray-900">Tổng phí:</span>
+                      <span className="text-lg font-semibold text-gray-900">Tổng buyer phải thanh toán:</span>
                       <span className="text-xl font-bold text-blue-600">
-                        {formatCurrency(calculateTotal(buyerFees))} VNĐ
+                        {hideBuyerDetails ? maskText : `${formatCurrency(getCarPrice() + getBuyerFee())} VNĐ`}
                       </span>
                     </div>
                   </div>
@@ -416,26 +578,36 @@ export default function TransactionDetail() {
                   </div>
                 </div>
                 <div className="p-6">
-                  <FeeInputField label="Phí công chứng" value={sellerFees.notarizationFee}
-                    onChange={(v) => handleSellerFeeChange("notarizationFee", v)}
-                    error={errors.seller_notarizationFee}/>
-                  <FeeInputField label="Phí hoa hồng" value={sellerFees.commissionFee}
-                    onChange={(v) => handleSellerFeeChange("commissionFee", v)}
-                    error={errors.seller_commissionFee}/>
-                  <FeeInputField label="Phí trước bạ" value={sellerFees.registrationFee}
-                    onChange={(v) => handleSellerFeeChange("registrationFee", v)}
-                    error={errors.seller_registrationFee}/>
-                  <FeeInputField label="Phí đăng ký" value={sellerFees.licensePlateFee}
-                    onChange={(v) => handleSellerFeeChange("licensePlateFee", v)}
-                    error={errors.seller_licensePlateFee}/>
-                  <FeeInputField label="Lệ phí đăng kiểm/đường bộ" value={sellerFees.inspectionFee}
-                    onChange={(v) => handleSellerFeeChange("inspectionFee", v)}
-                    error={errors.seller_inspectionFee}/>
+                  <PercentInputField
+                    label="Phí phải chịu (% trên giá trị xe)"
+                    value={sellerFeePercent}
+                    onChange={(v) => {
+                      setSellerFeePercent(v);
+                      if (errors.sellerFeePercent) setErrors((p) => ({ ...p, sellerFeePercent: null }));
+                    }}
+                    error={errors.sellerFeePercent}
+                  />
+                  <div className="mt-4 p-4 bg-green-50 rounded-lg">
+                    <div className="text-sm text-gray-600 mb-2">
+                      Giá trị xe: <span className="font-semibold text-gray-900">{formatCurrency(getCarPrice())} VNĐ</span>
+                    </div>
+                    <div className="text-sm text-gray-600 mb-1">
+                      Công thức: <span className="font-medium">{(parseFloat(sellerFeePercent || 0) || 0)}%</span> ×{" "}
+                      <span className="font-medium">{formatCurrency(getCarPrice())}</span> ={" "}
+                      <span className="font-semibold text-green-600">{formatCurrency(getSellerFee())} VNĐ</span>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Phí phải trả:{" "}
+                      <span className="font-semibold text-green-600 text-lg">
+                        {hideSellerDetails ? maskText : `${formatCurrency(getSellerFee())} VNĐ`}
+                      </span>
+                    </div>
+                  </div>
                   <div className="mt-6 pt-4 border-t border-gray-200">
                     <div className="flex justify-between items-center">
-                      <span className="text-lg font-semibold text-gray-900">Tổng phí:</span>
+                      <span className="text-lg font-semibold text-gray-900">Tổng seller nhận được:</span>
                       <span className="text-xl font-bold text-green-600">
-                        {formatCurrency(calculateTotal(sellerFees))} VNĐ
+                        {hideSellerDetails ? maskText : `${formatCurrency(getCarPrice() - getSellerFee())} VNĐ`}
                       </span>
                     </div>
                   </div>
@@ -443,38 +615,50 @@ export default function TransactionDetail() {
               </div>
             </div>
 
-            {/* Action: gửi hồ sơ */}
+            {/* GỬI HỒ SƠ */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Gửi hồ sơ xác nhận</h3>
-              <p className="text-sm text-gray-600 mb-4">Gửi hồ sơ đến người mua và người bán để xác nhận phí</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(buyerRecordSent || sellerRecordSent) && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <div className="flex-1">
+                      {buyerRecordSent && sellerRecordSent ? (
+                        <span className="text-green-700 font-medium">Đã gửi hồ sơ cho cả người mua và người bán</span>
+                      ) : buyerRecordSent ? (
+                        <span className="text-green-700 font-medium">Đã gửi hồ sơ cho người mua</span>
+                      ) : (
+                        <span className="text-green-700 font-medium">Đã gửi hồ sơ cho người bán</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="flex flex-col md:flex-row gap-3">
                 <button
-                  onClick={handleSendRecordToBuyer}
-                  disabled={buyerRecordSent || buyerSending}
-                  className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg transition-colors font-medium ${
-                    buyerRecordSent
+                  onClick={handleSendRecordToBoth}
+                  disabled={(buyerRecordSent && sellerRecordSent) || buyerSending || sellerSending}
+                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-lg transition-colors font-medium text-lg ${
+                    buyerRecordSent && sellerRecordSent
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : buyerSending
-                      ? "bg-blue-300 text-white cursor-wait"
-                      : "bg-blue-600 text-white hover:bg-blue-700"
+                      : buyerSending || sellerSending
+                      ? "bg-purple-300 text-white cursor-wait"
+                      : "bg-gradient-to-r from-blue-600 to-green-600 text-white hover:from-blue-700 hover:to-green-700 shadow-lg"
                   }`}
                 >
-                  <User className="w-5 h-5" />
-                  {buyerRecordSent ? "Đã gửi - User A" : buyerSending ? "Đang gửi..." : "Gửi hồ sơ - User A"}
+                  <Send className="w-6 h-6" />
+                  {buyerRecordSent && sellerRecordSent
+                    ? "Đã gửi hồ sơ"
+                    : buyerSending || sellerSending
+                    ? "Đang gửi hồ sơ..."
+                    : "Gửi hồ sơ cho người mua & người bán"}
                 </button>
+
                 <button
-                  onClick={handleSendRecordToSeller}
-                  disabled={sellerRecordSent || sellerSending}
-                  className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg transition-colors font-medium ${
-                    sellerRecordSent
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : sellerSending
-                      ? "bg-green-300 text-white cursor-wait"
-                      : "bg-green-600 text-white hover:bg-green-700"
-                  }`}
+                  onClick={() => setShowConfirmModal(true)}
+                  className="px-6 py-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                 >
-                  <User className="w-5 h-5" />
-                  {sellerRecordSent ? "Đã gửi - User B" : sellerSending ? "Đang gửi..." : "Gửi hồ sơ - User B"}
+                  Mở trạng thái xác nhận
                 </button>
               </div>
             </div>
@@ -504,11 +688,24 @@ export default function TransactionDetail() {
 
                   {otpSent && (
                     <button
-                      onClick={handleVerifyOtp}
+                      onClick={() => {
+                        if (!otpSent) {
+                          setToast({ type: "error", message: "Chưa gửi OTP" });
+                          return;
+                        }
+                        if (!buyerConfirmed) {
+                          setToast({ type: "error", message: "Chờ người mua xác nhận hồ sơ" });
+                          return;
+                        }
+                        if (!sellerConfirmed) {
+                          setToast({ type: "error", message: "Chờ người bán xác nhận hồ sơ" });
+                          return;
+                        }
+                        setShowFinalConfirm(true);
+                      }}
                       className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-green-700 transition-all font-medium shadow-lg"
                     >
-                      <CheckCircle className="w-5 h-5" />
-                      Xác nhận giao dịch
+                      <CheckCircle className="w-5 h-5" /> Xác nhận giao dịch
                     </button>
                   )}
                 </div>
@@ -555,7 +752,9 @@ export default function TransactionDetail() {
                       onChange={(e) => setBuyerConfirmed(e.target.checked)}
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
-                    <label htmlFor="buyerConfirm" className="text-sm text-gray-700">Người mua đã xác nhận hồ sơ</label>
+                    <label htmlFor="buyerConfirm" className="text-sm text-gray-700">
+                      Người mua đã xác nhận hồ sơ
+                    </label>
                   </div>
                 </div>
 
@@ -578,14 +777,31 @@ export default function TransactionDetail() {
                       onChange={(e) => setSellerConfirmed(e.target.checked)}
                       className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
                     />
-                    <label htmlFor="sellerConfirm" className="text-sm text-gray-700">Người bán đã xác nhận hồ sơ</label>
+                    <label htmlFor="sellerConfirm" className="text-sm text-gray-700">
+                      Người bán đã xác nhận hồ sơ
+                    </label>
                   </div>
                 </div>
               </div>
 
               <div className="mt-6 flex gap-3">
                 <button
-                  onClick={handleVerifyOtp}
+                  onClick={() => {
+                    if (!otpSent) {
+                      setToast({ type: "error", message: "Chưa gửi OTP" });
+                      return;
+                    }
+                    if (!buyerConfirmed) {
+                      setToast({ type: "error", message: "Chờ người mua xác nhận hồ sơ" });
+                      return;
+                    }
+                    if (!sellerConfirmed) {
+                      setToast({ type: "error", message: "Chờ người bán xác nhận hồ sơ" });
+                      return;
+                    }
+                    setShowFinalConfirm(true);
+                    setShowConfirmModal(false);
+                  }}
                   disabled={!otpSent}
                   className={`flex-1 py-3 px-4 rounded-lg transition-colors font-medium ${
                     otpSent ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -634,10 +850,22 @@ export default function TransactionDetail() {
               </div>
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-gray-600">Mã hồ sơ:</span><span className="font-semibold">{recordData.id}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600">Xe:</span><span className="font-semibold">{recordData.carModel}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600">Người mua:</span><span className="font-semibold">{recordData.buyerName}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600">Người bán:</span><span className="font-semibold">{recordData.sellerName}</span></div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Mã hồ sơ:</span>
+                    <span className="font-semibold">{recordData.id}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Xe:</span>
+                    <span className="font-semibold">{recordData.carModel}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Người mua:</span>
+                    <span className="font-semibold">{recordData.buyerName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Người bán:</span>
+                    <span className="font-semibold">{recordData.sellerName}</span>
+                  </div>
                 </div>
               </div>
               <div className="flex gap-3">
