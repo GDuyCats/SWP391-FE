@@ -31,6 +31,12 @@ function AdminHome() {
                 <p className="text-gray-600 mb-4">Quản lý hồ sơ giao dịch mua bán xe giữa người mua và người bán.</p>
                 <Link to="/transactionrecords" className="text-blue-600 hover:underline">Đi tới quản lý hồ sơ</Link>
               </div>
+
+              <div className="p-6 bg-white rounded border border-gray-200">
+                <h2 className="text-xl font-semibold mb-2">Xác nhận yêu cầu</h2>
+                <p className="text-gray-600 mb-4">Xác nhận yêu cầu mua xe.</p>
+                <Link to="/request-management" className="text-blue-600 hover:underline">Đi tới Request Management</Link>
+              </div>
             </div>
           </div>
         </main>

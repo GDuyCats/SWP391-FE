@@ -16,6 +16,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Layout from "./components/Layout";
 import CarDetails from "./pages/Listing/CarDetails";
+import BatteryDetails from "./pages/Listing/BatteryDetails";
 import AdminHome from "./pages/Admin/Home";
 import TransactionRecords from "./pages/Admin/TransactionRecords";
 import TransactionDetail from "./pages/Admin/TransactionDetail";
@@ -24,6 +25,7 @@ import StaffAssignment from "./pages/Admin/StaffAssignment";
 import Forbidden from "./pages/Admin/Forbidden";
 import AdminRoute from "./components/Admin/AdminRoute";
 import Cars from "./pages/Cars";
+import Batteries from "./pages/Batteries";
 import PaymentSuccessfully from "./pages/PaymentSuccessfully";
 import PaymentFails from "./pages/PaymentFails";
 import ChooseListing from "./pages/Listing/ChooseListing";
@@ -37,6 +39,7 @@ import LayoutAdmin from "./components/LayoutAdmin";
 import PostManagement from "./pages/PostManagement";
 import BuyerContractManagement from "./pages/BuyerContractManagement";
 import SellerContractManagement from "./pages/SellerContractManagement";
+import RequestManagement from "./components/RequestManagement";
 function App() {
   return (
     <BrowserRouter>
@@ -65,6 +68,7 @@ function App() {
         </Route>
 
         <Route path="/listing/ev/:id" element={<CarDetails />} />
+        <Route path="/listing/battery/:id" element={<BatteryDetails />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/contractA" element={<ContractA />} />
@@ -83,6 +87,7 @@ function App() {
         <Route element={<LayoutAdmin />}>
           <Route path="/users" element={<Users />} />
           <Route path="/adminapprove" element={<AdminApprove />} />
+          <Route path="/request-management" element={<RequestManagement />} />
         </Route>
 
         <Route path="/admin/forbidden" element={<Forbidden />} />
@@ -92,6 +97,7 @@ function App() {
         <Route path="/paymentsuccessfully" element={<PaymentSuccessfully />} />
         <Route path="/paymentfails" element={<PaymentFails />} />
         <Route path="/cars" element={<Cars />} />
+        <Route path="/batteries" element={<Batteries />} />
         
       </Routes>
     </BrowserRouter>

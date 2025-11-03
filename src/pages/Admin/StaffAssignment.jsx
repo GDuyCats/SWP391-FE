@@ -1,62 +1,62 @@
 import React, { useEffect, useState } from "react";
 import AdminHeader from "../../components/Admin/AdminHeader";
 import AdminSidebar from "../../components/Admin/AdminSidebar";
-import { UserCog, Filter, Save, Users, UserCheck, Search, Mail, Phone, Calendar, Shield, UserPen } from "lucide-react";
+import { ClipboardList, FileText, Clock, UserCheck } from "lucide-react";
 import Toast from "../../components/Toast";
 import { api } from "../../services/api";
 import RequestDialog from "../../components/RequestDialog";
 
 export default function StaffAssignment() {
+  const [contracts, setContracts] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [toast, setToast] = useState(false);
   const [type, setType] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
-  const [selectedStaff, setSelectedStaff] = useState(null);
-  const [staffs, setStaffs] = useState([]);
+  const [selectedContractId, setSelectedContractId] = useState(null);
 
-  async function getAllStaff() {
+  // === LẤY HỢP ĐỒNG CHƯA CÓ STAFF ===
+  async function getUnassignedContracts() {
+    setLoading(true);
     try {
-      const res = await api.get("/admin/staff");
-      console.log(res);
+      const res = await api.get("/admin/contracts/allContract");
       if (res.status === 200) {
-        setStaffs(res.data.staff);
+        const unassigned = (res.data.contracts || []).filter((c) => !c.staffId);
+        setContracts(unassigned);
         setToast(true);
         setType("success");
-        setMsg("Lấy danh sách nhân viên thành công");
+        setMsg("Lấy danh sách hợp đồng thành công");
+        console.log("API Response:", res.data);
       }
     } catch (error) {
       console.log(error);
-      const status = error?.status;
-      const msg = error?.response?.data;
-      let errorMsg = 'Không thể lấy danh sách nhân viên';
+      const status = error?.response?.status;
+      let errorMsg = "Không thể lấy danh sách hợp đồng";
       setToast(true);
       setType("error");
-      if (status === 401) {
-        errorMsg = msg ? msg : "Missing or invalid token";
-      } else if (status === 403) {
-        errorMsg = msg ? msg : "Not authorized (Admin Only)";
-      }
+      if (status === 401) errorMsg = "Phiên đăng nhập hết hạn";
+      else if (status === 403) errorMsg = "Không đủ quyền (Admin Only)";
+      else if (status === 500) errorMsg = "Lỗi máy chủ";
       setMsg(errorMsg);
     } finally {
+      setLoading(false);
       setTimeout(() => setToast(false), 3000);
     }
   }
 
-
-
   useEffect(() => {
-    getAllStaff();
+    getUnassignedContracts();
   }, []);
 
   // Format date
   const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -65,153 +65,136 @@ export default function StaffAssignment() {
       <AdminHeader />
       <div className="flex">
         <AdminSidebar />
-        <main className="flex-1 py-8 px-8">
-          <div className="w-full">
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                <UserCog className="w-8 h-8 text-blue-600" /> Quản lý nhân viên
+        <main className="flex-1 py-8 px-6 md:px-10">
+          <div className="max-w-7xl mx-auto w-full">
+            {/* Tiêu đề */}
+            <div className="mb-8 border-b border-gray-200 pb-4">
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <ClipboardList className="w-8 h-8 text-blue-600" />
+                Gán nhân viên phụ trách hợp đồng
               </h1>
-              <p className="text-gray-600 mt-2">Danh sách tất cả nhân viên trong hệ thống</p>
+              <p className="text-gray-600 mt-2">
+                Danh sách hợp đồng chưa có nhân viên hỗ trợ
+              </p>
             </div>
 
-            {/* Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
+            {/* Thống kê */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Tổng nhân viên</p>
-                    <p className="text-2xl font-bold text-gray-900">{staffs.length}</p>
+                    <p className="text-sm text-gray-600">Tổng hợp đồng</p>
+                    <p className="text-2xl font-semibold text-gray-900">{contracts.length}</p>
                   </div>
-                  <Users className="w-8 h-8 text-blue-500" />
+                  <FileText className="w-8 h-8 text-blue-500" />
                 </div>
               </div>
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Đã xác thực</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {staffs.filter(s => s.isVerified).length}
-                    </p>
+                    <p className="text-sm text-gray-600">Chưa gán</p>
+                    <p className="text-2xl font-semibold text-orange-600">{contracts.length}</p>
+                  </div>
+                  <Clock className="w-8 h-8 text-orange-500" />
+                </div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Sẵn sàng gán</p>
+                    <p className="text-2xl font-semibold text-green-600">{contracts.length}</p>
                   </div>
                   <UserCheck className="w-8 h-8 text-green-500" />
                 </div>
               </div>
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Chưa xác thực</p>
-                    <p className="text-2xl font-bold text-orange-600">
-                      {staffs.filter(s => !s.isVerified).length}
-                    </p>
-                  </div>
-                  <Shield className="w-8 h-8 text-orange-500" />
-                </div>
-              </div>
             </div>
 
-            {/* Staff Table */}
-            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên đăng nhập</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số điện thoại</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vai trò</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cập nhật</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
-
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {staffs.length > 0 ? (
-                      staffs.map((staff) => (
-                        <tr key={staff.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">#{staff.id}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                <span className="text-blue-600 font-semibold text-sm">
-                                  {staff.username?.charAt(0).toUpperCase()}
-                                </span>
-                              </div>
-                              <div className="text-sm font-medium text-gray-900">{staff.username}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <Mail className="w-4 h-4 text-gray-400" />
-                              <div className="text-sm text-gray-900">{staff.email}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <Phone className="w-4 h-4 text-gray-400" />
-                              <div className="text-sm text-gray-500">
-                                {staff.phone || 'Chưa cập nhật'}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                              <Shield className="w-3 h-3" />
-                              {staff.role}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {staff.isVerified ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <UserCheck className="w-3 h-3" />
-                                Đã xác thực
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                                <Calendar className="w-3 h-3" />
-                                Chưa xác thực
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-500">
-                              {formatDate(staff.createdAt)}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-500">
-                              {formatDate(staff.updatedAt)}
-                            </div>
+            {/* BẢNG HỢP ĐỒNG - ĐÃ MAP ĐÚNG DỮ LIỆU */}
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+              {loading ? (
+                <div className="p-10 text-center">
+                  <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                  <p className="mt-3 text-gray-500">Đang tải dữ liệu...</p>
+                </div>
+              ) : contracts.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Mã HD
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Người mua
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Người bán
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Bài đăng
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Ngày tạo
+                        </th>
+                        <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider min-w-[140px]">
+                          Thao tác
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-100">
+                      {contracts.map((c) => (
+                        <tr key={c.id} className="hover:bg-gray-50 transition-colors duration-150">
+                          {/* MÃ HD */}
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
+                            #{c.id}
                           </td>
 
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          {/* NGƯỜI MUA */}
+                          <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
+                            {c.buyer?.username || "—"}
+                          </td>
 
+                          {/* NGƯỜI BÁN */}
+                          <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
+                            {c.seller?.username || "—"}
+                          </td>
+
+                          {/* BÀI ĐĂNG */}
+                          <td className="px-6 py-4 text-sm font-medium text-blue-600 whitespace-nowrap truncate max-w-[200px]" title={c.Post?.title}>
+                            {c.Post?.title || "—"}
+                          </td>
+
+                          {/* NGÀY TẠO */}
+                          <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                            {formatDate(c.createdAt)}
+                          </td>
+
+                          {/* THAO TÁC - CĂN GIỮA HOÀN HẢO */}
+                          <td className="px-6 py-4 text-center min-w-[140px]">
                             <button
                               onClick={() => {
-                                setSelectedStaff(staff.id);
+                                setSelectedContractId(c.id);
                                 setOpenDialog(true);
                               }}
-                              className="text-blue-600 hover:text-blue-800"
+                              className="group relative inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium px-5 py-2.5 rounded-full shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 text-sm whitespace-nowrap"
                             >
-                              <UserPen className="w-5 h-5" />
+                              <UserCheck className="w-4 h-4" />
+                              <span>Gán nhân viên</span>
+                              <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-10">
+                                Mở form gán nhân viên
+                              </span>
                             </button>
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="8" className="px-6 py-8 text-center text-gray-500">
-                          Không có nhân viên nào trong hệ thống
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-10 text-center text-gray-500">
+                  Tất cả hợp đồng đã có nhân viên phụ trách.
+                </div>
+              )}
             </div>
           </div>
         </main>
@@ -220,15 +203,10 @@ export default function StaffAssignment() {
       <RequestDialog
         open={openDialog}
         onClose={() => setOpenDialog(false)}
-        staffId={selectedStaff}
+        contractId={selectedContractId}
       />
 
-      <div>
-        {toast && msg && (
-          <Toast type={type} msg={msg} />
-        )}
-      </div>
-
+      {toast && msg && <Toast type={type} msg={msg} />}
     </div>
   );
 }
