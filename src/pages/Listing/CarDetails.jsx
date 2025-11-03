@@ -4,11 +4,13 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { api } from "../../services/api";
 
+
 function CarDetails() {
   const { id } = useParams();
   const { state } = useLocation();
   const [post, setPost] = useState(state?.post || null);
   const [loading, setLoading] = useState(!state?.post);
+
 
   useEffect(() => {
     // Nếu không có dữ liệu từ state, fetch từ API
@@ -52,8 +54,9 @@ function CarDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <Header />
+
       <main className="py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
@@ -133,68 +136,68 @@ function CarDetails() {
                   post.mileage ||
                   post.color ||
                   post.condition) && (
-                  <div className="mb-6">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-900">
-                      Thông tin xe
-                    </h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                      {post.brand && (
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-1">Hãng xe</p>
-                          <p className="font-semibold text-gray-900">
-                            {post.brand}
-                          </p>
-                        </div>
-                      )}
-                      {post.model && (
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-1">Model</p>
-                          <p className="font-semibold text-gray-900">
-                            {post.model}
-                          </p>
-                        </div>
-                      )}
-                      {post.year && (
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-1">
-                            Năm sản xuất
-                          </p>
-                          <p className="font-semibold text-gray-900">
-                            {post.year}
-                          </p>
-                        </div>
-                      )}
-                      {post.mileage && (
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-1">
-                            Số km đã đi
-                          </p>
-                          <p className="font-semibold text-gray-900">
-                            {Number(post.mileage).toLocaleString()} km
-                          </p>
-                        </div>
-                      )}
-                      {post.color && (
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-1">Màu sắc</p>
-                          <p className="font-semibold text-gray-900">
-                            {post.color}
-                          </p>
-                        </div>
-                      )}
-                      {post.condition && (
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-1">
-                            Tình trạng
-                          </p>
-                          <p className="font-semibold text-gray-900">
-                            {post.condition}
-                          </p>
-                        </div>
-                      )}
+                    <div className="mb-6">
+                      <h2 className="text-xl font-semibold mb-4 text-gray-900">
+                        Thông tin xe
+                      </h2>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                        {post.brand && (
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">Hãng xe</p>
+                            <p className="font-semibold text-gray-900">
+                              {post.brand}
+                            </p>
+                          </div>
+                        )}
+                        {post.model && (
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">Model</p>
+                            <p className="font-semibold text-gray-900">
+                              {post.model}
+                            </p>
+                          </div>
+                        )}
+                        {post.year && (
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Năm sản xuất
+                            </p>
+                            <p className="font-semibold text-gray-900">
+                              {post.year}
+                            </p>
+                          </div>
+                        )}
+                        {post.mileage && (
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Số km đã đi
+                            </p>
+                            <p className="font-semibold text-gray-900">
+                              {Number(post.mileage).toLocaleString()} km
+                            </p>
+                          </div>
+                        )}
+                        {post.color && (
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">Màu sắc</p>
+                            <p className="font-semibold text-gray-900">
+                              {post.color}
+                            </p>
+                          </div>
+                        )}
+                        {post.condition && (
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Tình trạng
+                            </p>
+                            <p className="font-semibold text-gray-900">
+                              {post.condition}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Thông tin pin */}
                 {(post.battery_brand ||
@@ -204,80 +207,80 @@ function CarDetails() {
                   post.battery_range ||
                   post.battery_condition ||
                   post.charging_time) && (
-                  <div className="mb-6">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-900">
-                      Thông tin pin
-                    </h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                      {post.battery_brand && (
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-1">Hãng pin</p>
-                          <p className="font-semibold text-gray-900">
-                            {post.battery_brand}
-                          </p>
-                        </div>
-                      )}
-                      {post.battery_model && (
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-1">
-                            Model pin
-                          </p>
-                          <p className="font-semibold text-gray-900">
-                            {post.battery_model}
-                          </p>
-                        </div>
-                      )}
-                      {post.battery_type && (
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-1">Loại pin</p>
-                          <p className="font-semibold text-gray-900">
-                            {post.battery_type}
-                          </p>
-                        </div>
-                      )}
-                      {post.battery_capacity && (
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-1">
-                            Dung lượng pin
-                          </p>
-                          <p className="font-semibold text-gray-900">
-                            {post.battery_capacity} kWh
-                          </p>
-                        </div>
-                      )}
-                      {post.battery_range && (
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-1">
-                            Quãng đường di chuyển
-                          </p>
-                          <p className="font-semibold text-gray-900">
-                            {post.battery_range} km
-                          </p>
-                        </div>
-                      )}
-                      {post.battery_condition && (
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-1">
-                            Tình trạng pin
-                          </p>
-                          <p className="font-semibold text-gray-900">
-                            {post.battery_condition}
-                          </p>
-                        </div>
-                      )}
-                      {post.charging_time && (
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-1">
-                            Thời gian sạc
-                          </p>
-                          <p className="font-semibold text-gray-900">
-                            {post.charging_time} giờ
-                          </p>
-                        </div>
-                      )}
+                    <div className="mb-6">
+                      <h2 className="text-xl font-semibold mb-4 text-gray-900">
+                        Thông tin pin
+                      </h2>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                        {post.battery_brand && (
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">Hãng pin</p>
+                            <p className="font-semibold text-gray-900">
+                              {post.battery_brand}
+                            </p>
+                          </div>
+                        )}
+                        {post.battery_model && (
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Model pin
+                            </p>
+                            <p className="font-semibold text-gray-900">
+                              {post.battery_model}
+                            </p>
+                          </div>
+                        )}
+                        {post.battery_type && (
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">Loại pin</p>
+                            <p className="font-semibold text-gray-900">
+                              {post.battery_type}
+                            </p>
+                          </div>
+                        )}
+                        {post.battery_capacity && (
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Dung lượng pin
+                            </p>
+                            <p className="font-semibold text-gray-900">
+                              {post.battery_capacity} kWh
+                            </p>
+                          </div>
+                        )}
+                        {post.battery_range && (
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Quãng đường di chuyển
+                            </p>
+                            <p className="font-semibold text-gray-900">
+                              {post.battery_range} km
+                            </p>
+                          </div>
+                        )}
+                        {post.battery_condition && (
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Tình trạng pin
+                            </p>
+                            <p className="font-semibold text-gray-900">
+                              {post.battery_condition}
+                            </p>
+                          </div>
+                        )}
+                        {post.charging_time && (
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Thời gian sạc
+                            </p>
+                            <p className="font-semibold text-gray-900">
+                              {post.charging_time} giờ
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Nút hành động */}
                 <div className="flex gap-4 pt-6">
@@ -310,9 +313,11 @@ function CarDetails() {
           )}
         </div>
       </main>
+
       <Footer />
+
+
     </div>
   );
 }
-
 export default CarDetails;

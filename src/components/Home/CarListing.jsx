@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../../services/api";
 import Toast from "../Toast";
 import { useNavigate } from "react-router-dom";
+import { Star } from "lucide-react";
 
 const CarListing = () => {
   const navigate = useNavigate();
@@ -11,9 +12,28 @@ const CarListing = () => {
   const [toast, setToast] = useState(false);
   const [type, setType] = useState("");
 
+  const renderVipBadge = (post) => {
+    if (!post.isVip || !post.vipTier) return null;
+
+    const tiers = {
+      silver: { label: "VIP Bạc", color: "text-gray-700", bg: "bg-gray-100" },
+      gold: { label: "VIP Vàng", color: "text-yellow-700", bg: "bg-yellow-100" },
+      platinum: { label: "VIP Bạch kim", color: "text-cyan-700", bg: "bg-cyan-100" },
+      diamond: { label: "VIP Kim cương", color: "text-purple-700", bg: "bg-purple-100" }
+    };
+
+    const info = tiers[post.vipTier.toLowerCase()] || tiers.silver;
+
+    return (
+      <div className={`absolute top-4 left-4 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold shadow-md ${info.bg} ${info.color}`}>
+        <Star className="w-4 h-4 fill-current" />
+        {info.label}
+      </div>
+    );
+  };
+
   async function handleRequest(id) {
     console.log(id);
-
     try {
       const res = await api.post("/PurchaseRequests", {
         postId: id,

@@ -1,26 +1,23 @@
 import React, { useEffect, useState } from "react";
-import { X, ClipboardList, ClipboardCheck } from "lucide-react";
+import { X, UserCheck, Search } from "lucide-react";
 import { api } from "../services/api";
 import Toast from "../components/Toast";
 
-export default function ContractDialog({ open, onClose, staffId }) {
-    const [contracts, setContracts] = useState([]);
+export default function RequestDialog({ open, onClose, contractId }) {
+    const [staffs, setStaffs] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [search, setSearch] = useState("");
     const [toast, setToast] = useState(false);
     const [type, setType] = useState("");
     const [msg, setMsg] = useState("");
 
-
-    async function getAllContracts() {
+    // === LẤY TẤT CẢ NHÂN VIÊN ===
+    async function getAllStaff() {
         setLoading(true);
         try {
-            const res = await api.get("/admin/contracts/allContract");
+            const res = await api.get("/admin/staff");
             if (res.status === 200) {
-
-                const unassigned = (res.data.contracts || []).filter(
-                    (c) => !c.staffId
-                );
-                setContracts(unassigned);
+                setStaffs(res.data.staff || []);
             }
         } catch (error) {
             console.error(error);
@@ -29,56 +26,55 @@ export default function ContractDialog({ open, onClose, staffId }) {
         }
     }
 
-
-    async function handleAssign(id) {
+    // === GÁN NHÂN VIÊN CHO HỢP ĐỒNG ===
+    async function handleAssign(staffId) {
         try {
             const res = await api.post("/admin/contracts/assign-staff", {
-                contractId: id,
+                contractId: contractId,
                 staffId: staffId,
             });
-
             if (res.status === 200) {
                 setToast(true);
                 setType("success");
-                setMsg("Gán nhân viên phụ trách hợp đồng thành công");
-
-
-                setContracts((prev) => prev.filter((c) => c.id !== id));
+                setMsg("Gán nhân viên thành công!");
+                onClose(); // Đóng dialog
             }
         } catch (error) {
             console.log(error);
-            const status = error?.status;
-            const msg = error?.response?.data;
-            let errorMsg = "Không thể gán nhân viên phụ trách hợp đồng";
-
-            if (status === 400)
-                errorMsg = msg || "Dữ liệu không hợp lệ hoặc contract không thể gán";
-            else if (status === 401)
-                errorMsg = msg || "Thiếu hoặc token không hợp lệ";
-            else if (status === 403)
-                errorMsg = msg || "Không đủ quyền (chỉ admin được phép)";
-            else if (status === 404)
-                errorMsg = msg || "Không tìm thấy hợp đồng hoặc staff";
-            else if (status === 500)
-                errorMsg = msg || "Lỗi máy chủ";
-
+            const status = error?.response?.status;
+            let errorMsg = "Không thể gán nhân viên";
             setType("error");
+
+            if (status === 400) errorMsg = "Dữ liệu không hợp lệ";
+            else if (status === 403) errorMsg = "Không đủ quyền";
+            else if (status === 404) errorMsg = "Không tìm thấy hợp đồng/staff";
+            else if (status === 500) errorMsg = "Lỗi máy chủ";
+
             setMsg(errorMsg);
+            setToast(true);
         } finally {
             setTimeout(() => setToast(false), 3000);
         }
     }
 
     useEffect(() => {
-        if (open) getAllContracts();
+        if (open) {
+            getAllStaff();
+        }
     }, [open]);
+
+    // Lọc theo tìm kiếm
+    const filteredStaff = staffs.filter(
+        (s) =>
+            s.username.toLowerCase().includes(search.toLowerCase()) ||
+            s.email.toLowerCase().includes(search.toLowerCase())
+    );
 
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl p-6 relative">
-
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 relative">
                 <button
                     onClick={onClose}
                     className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
@@ -86,58 +82,66 @@ export default function ContractDialog({ open, onClose, staffId }) {
                     <X className="w-6 h-6" />
                 </button>
 
-
                 <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
-                    <ClipboardList className="text-blue-600" />
-                    Danh sách hợp đồng chưa có nhân viên phụ trách
+                    <UserCheck className="text-blue-600" />
+                    Chọn nhân viên phụ trách hợp đồng #{contractId}
                 </h2>
 
-
-                {loading ? (
-                    <div className="text-center py-8 text-gray-500 text-sm">
-                        Đang tải dữ liệu...
+                {/* Tìm kiếm */}
+                <div className="mb-4">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <input
+                            type="text"
+                            placeholder="Tìm theo tên hoặc email..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
                     </div>
-                ) : contracts.length > 0 ? (
-                    <div className="overflow-x-auto max-h-[500px] overflow-y-auto border border-gray-200 rounded-lg">
-                        <table className="min-w-full divide-y divide-gray-200 text-sm">
-                            <thead className="bg-gray-100 text-gray-600 uppercase text-xs font-semibold">
-                                <tr>
-                                    <th className="px-5 py-3 text-left">Mã</th>
-                                    <th className="px-5 py-3 text-left">Người mua (buyerId)</th>
-                                    <th className="px-5 py-3 text-left">Người bán (sellerId)</th>
-                                    <th className="px-5 py-3 text-left">Bài đăng (postId)</th>
-                                    <th className="px-5 py-3 text-center">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-100">
-                                {contracts.map((c) => (
-                                    <tr
-                                        key={c.id}
-                                        className="hover:bg-gray-50 transition-colors duration-150"
+                </div>
+
+                {/* Danh sách staff */}
+                {loading ? (
+                    <div className="text-center py-8">
+                        <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                    </div>
+                ) : filteredStaff.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {filteredStaff.map((staff) => (
+                            <div
+                                key={staff.id}
+                                className="border border-gray-200 rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
+                                onClick={() => handleAssign(staff.id)}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                            <span className="text-blue-600 font-bold text-sm">
+                                                {staff.username.charAt(0).toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-gray-900">{staff.username}</p>
+                                            <p className="text-sm text-gray-500">{staff.email}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleAssign(staff.id)}
+                                        className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-700 transition"
                                     >
-                                        <td className="px-5 py-3 font-medium text-gray-900">
-                                            #{c.id}
-                                        </td>
-                                        <td className="px-5 py-3 text-gray-700">{c.buyerId}</td>
-                                        <td className="px-5 py-3 text-gray-700">{c.sellerId}</td>
-                                        <td className="px-5 py-3 text-gray-700">{c.postId}</td>
-                                        <td className="px-5 py-3 text-center">
-                                            <button
-                                                onClick={() => handleAssign(c.id)}
-                                                className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300 mx-auto text-sm"
-                                            >
-                                                <ClipboardCheck className="w-5 h-5" />
-                                                Xác nhận
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                        Chọn
+                                    </button>
+                                </div>
+                                {staff.phone && (
+                                    <p className="text-xs text-gray-500 mt-2">Phone: {staff.phone}</p>
+                                )}
+                            </div>
+                        ))}
                     </div>
                 ) : (
-                    <div className="text-center text-gray-500 py-8 text-sm">
-                        Tất cả hợp đồng đã có nhân viên phụ trách.
+                    <div className="text-center py-8 text-gray-500">
+                        Không tìm thấy nhân viên nào.
                     </div>
                 )}
             </div>
