@@ -6,6 +6,7 @@ import UserDropdown from "./UserMenu/UserDropdown";
 const Header = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [showListingDropdown, setShowListingDropdown] = useState(false);
 
   useEffect(() => {
     // Check if user is logged in
@@ -46,7 +47,9 @@ const Header = () => {
           {/* Left: Logo */}
           <div className="flex items-center gap-2">
             <img src={logo} alt="EVPowerup" className="h-10 w-10" />
-            <span className="text-xl font-bold tracking-tight text-gray-900">EVPowerup</span>
+            <span className="text-xl font-bold tracking-tight text-gray-900">
+              EVPowerup
+            </span>
           </div>
 
           {/* Center: Nav (desktop) */}
@@ -54,24 +57,72 @@ const Header = () => {
             <NavLink
               to="/"
               className={({ isActive }) =>
-                `px-1.5 py-2 text-sm font-medium transition-colors ${isActive ? "text-gray-900" : "text-gray-700 hover:text-gray-900"}`
+                `px-1.5 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "text-gray-900"
+                    : "text-gray-700 hover:text-gray-900"
+                }`
               }
               end
             >
               Trang chủ
             </NavLink>
-            <NavLink
-              to="/cars"
-              className={({ isActive }) =>
-                `px-1.5 py-2 text-sm font-medium transition-colors ${isActive ? "text-gray-900" : "text-gray-700 hover:text-gray-900"}`
-              }
+
+            {/* Dropdown Danh sách */}
+            <div
+              className="relative group"
+              onMouseEnter={() => setShowListingDropdown(true)}
+              onMouseLeave={() => setShowListingDropdown(false)}
             >
-              Danh sách xe
-            </NavLink>
+              <button className="px-1.5 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors flex items-center gap-1">
+                Danh sách
+                <svg
+                  className={`w-4 h-4 transition-transform ${
+                    showListingDropdown ? "rotate-180" : ""
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+
+              {showListingDropdown && (
+                <div className="absolute top-full left-0 pt-2 z-50">
+                  <div className="w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1">
+                    <NavLink
+                      to="/cars"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      onClick={() => setShowListingDropdown(false)}
+                    >
+                      Danh sách xe
+                    </NavLink>
+                    <NavLink
+                      to="/batteries"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      onClick={() => setShowListingDropdown(false)}
+                    >
+                      Danh sách pin
+                    </NavLink>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <NavLink
               to="/news"
               className={({ isActive }) =>
-                `px-1.5 py-2 text-sm font-medium transition-colors ${isActive ? "text-gray-900" : "text-gray-700 hover:text-gray-900"}`
+                `px-1.5 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "text-gray-900"
+                    : "text-gray-700 hover:text-gray-900"
+                }`
               }
             >
               Tin tức
@@ -79,7 +130,11 @@ const Header = () => {
             <NavLink
               to="/about"
               className={({ isActive }) =>
-                `px-1.5 py-2 text-sm font-medium transition-colors ${isActive ? "text-gray-900" : "text-gray-700 hover:text-gray-900"}`
+                `px-1.5 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "text-gray-900"
+                    : "text-gray-700 hover:text-gray-900"
+                }`
               }
             >
               Giới thiệu
@@ -87,7 +142,11 @@ const Header = () => {
             <NavLink
               to="/contact"
               className={({ isActive }) =>
-                `px-1.5 py-2 text-sm font-medium transition-colors ${isActive ? "text-gray-900" : "text-gray-700 hover:text-gray-900"}`
+                `px-1.5 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "text-gray-900"
+                    : "text-gray-700 hover:text-gray-900"
+                }`
               }
             >
               Liên hệ
@@ -150,8 +209,18 @@ const Header = () => {
 
             {/* Mobile menu button (non-functional placeholder) */}
             <button className="lg:hidden text-gray-700 hover:text-gray-900 p-2">
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
           </div>

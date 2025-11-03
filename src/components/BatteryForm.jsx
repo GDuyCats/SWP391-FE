@@ -14,14 +14,15 @@ export default function BatteryForm() {
 
   const [formData, setFormData] = useState({
     title: "",
+    phone: "",
+    battery_brand: "",
+    battery_model: "",
     battery_capacity: "",
+    battery_type: "",
     battery_range: "",
-    soh: "",
-    motorPower: "",
-    motorType: "",
-    chargingTimeAC: "",
-    chargingTimeDC: "",
-    chargingPort: "",
+    battery_condition: "",
+    charging_time: "",
+    compatible_models: "",
     price: "",
     content: "",
   });
@@ -63,19 +64,18 @@ export default function BatteryForm() {
       data.append("price", formData.price);
       data.append("category", "battery");
       data.append("hasBattery", "true");
+      if (formData.phone) data.append("phone", formData.phone);
 
       // Thông tin pin
+      data.append("battery_brand", formData.battery_brand);
+      data.append("battery_model", formData.battery_model);
       data.append("battery_capacity", formData.battery_capacity);
+      data.append("battery_type", formData.battery_type);
       data.append("battery_range", formData.battery_range);
-      if (formData.soh) data.append("soh", formData.soh);
-      if (formData.motorPower) data.append("motorPower", formData.motorPower);
-      if (formData.motorType) data.append("motorType", formData.motorType);
-      if (formData.chargingTimeAC)
-        data.append("chargingTimeAC", formData.chargingTimeAC);
-      if (formData.chargingTimeDC)
-        data.append("chargingTimeDC", formData.chargingTimeDC);
-      if (formData.chargingPort)
-        data.append("chargingPort", formData.chargingPort);
+      data.append("battery_condition", formData.battery_condition);
+      data.append("charging_time", formData.charging_time);
+      if (formData.compatible_models)
+        data.append("compatible_models", formData.compatible_models);
 
       // Files
       data.append("thumbnailFile", ensuredThumb);
@@ -146,11 +146,48 @@ export default function BatteryForm() {
                 required
               />
               <input
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                type="tel"
+                placeholder="Số điện thoại liên hệ"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                pattern="[0-9]{10,11}"
+                title="Vui lòng nhập số điện thoại hợp lệ (10-11 số)"
+              />
+              <input
+                name="battery_brand"
+                value={formData.battery_brand}
+                onChange={handleChange}
+                type="text"
+                placeholder="Hãng pin *"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                required
+              />
+              <input
+                name="battery_model"
+                value={formData.battery_model}
+                onChange={handleChange}
+                type="text"
+                placeholder="Model pin *"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                required
+              />
+              <input
                 name="battery_capacity"
                 value={formData.battery_capacity}
                 onChange={handleChange}
-                type="text"
+                type="number"
                 placeholder="Dung lượng pin (kWh) *"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                required
+              />
+              <input
+                name="battery_type"
+                value={formData.battery_type}
+                onChange={handleChange}
+                type="text"
+                placeholder="Loại pin (LFP, NMC,...) *"
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                 required
               />
@@ -158,58 +195,37 @@ export default function BatteryForm() {
                 name="battery_range"
                 value={formData.battery_range}
                 onChange={handleChange}
-                type="text"
+                type="number"
                 placeholder="Quãng đường di chuyển (km) *"
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                 required
               />
               <input
-                name="soh"
-                value={formData.soh}
+                name="battery_condition"
+                value={formData.battery_condition}
                 onChange={handleChange}
                 type="text"
-                placeholder="Tình trạng pin - SOH (%)"
+                placeholder="Tình trạng pin (Còn 90%,...) *"
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                required
               />
               <input
-                name="motorPower"
-                value={formData.motorPower}
+                name="charging_time"
+                value={formData.charging_time}
                 onChange={handleChange}
-                type="text"
-                placeholder="Công suất động cơ (kW/HP)"
+                type="number"
+                step="0.1"
+                placeholder="Thời gian sạc (giờ) *"
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                required
               />
               <input
-                name="motorType"
-                value={formData.motorType}
+                name="compatible_models"
+                value={formData.compatible_models}
                 onChange={handleChange}
                 type="text"
-                placeholder="Loại động cơ"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-              />
-              <input
-                name="chargingTimeAC"
-                value={formData.chargingTimeAC}
-                onChange={handleChange}
-                type="text"
-                placeholder="Thời gian sạc thường (AC)"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-              />
-              <input
-                name="chargingTimeDC"
-                value={formData.chargingTimeDC}
-                onChange={handleChange}
-                type="text"
-                placeholder="Thời gian sạc nhanh (DC)"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-              />
-              <input
-                name="chargingPort"
-                value={formData.chargingPort}
-                onChange={handleChange}
-                type="text"
-                placeholder="Loại cổng sạc"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                placeholder='Xe tương thích (VD: ["VF e34","VF 5"])'
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent col-span-1 md:col-span-2"
               />
             </div>
           </section>
