@@ -1,280 +1,314 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useLocation, Link } from "react-router-dom";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { api } from "../../services/api";
-import Toast from "../../components/Toast";
-import { Star, Calendar, DollarSign, CheckCircle, AlertCircle, Battery, Zap, Clock, Tag, User } from "lucide-react";
+
 
 function CarDetails() {
   const { id } = useParams();
-  const [post, setPost] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState(false);
-  const [type, setType] = useState("");
-  const [msg, setMsg] = useState("");
+  const { state } = useLocation();
+  const [post, setPost] = useState(state?.post || null);
+  const [loading, setLoading] = useState(!state?.post);
 
-  async function getPostDetails() {
-    setLoading(true);
-    try {
-      const res = await api.get(`/posts/${parseInt(id)}`);
-      console.log("Full API Response:", res.data); // DEBUG
-
-      let postData = null;
-
-      // 1. Ưu tiên: res.data.data
-      if (res.data?.data) {
-        postData = res.data.data;
-      }
-      // 2. Hoặc: res.data.post
-      else if (res.data?.post) {
-        postData = res.data.post;
-      }
-      // 3. Hoặc: res.data chính là post
-      else if (res.data?.id) {
-        postData = res.data;
-      }
-
-      if (postData) {
-        setPost(postData);
-        showToast("success", "Lấy chi tiết bài đăng thành công");
-      } else {
-        showToast("error", "Dữ liệu bài đăng không hợp lệ");
-      }
-    } catch (error) {
-      console.log("API Error:", error);
-      const status = error?.response?.status;
-      let errorMsg = "Không thể xem chi tiết bài đăng";
-
-      if (status === 400) errorMsg = "ID bài đăng không hợp lệ";
-      else if (status === 404) errorMsg = "Bài đăng không tồn tại hoặc đã bị ẩn";
-      else if (status === 500) errorMsg = "Lỗi máy chủ";
-
-      showToast("error", errorMsg);
-    } finally {
-      setLoading(false);
-    }
-
-
-  };
-
-  const showToast = (t, m) => {
-    setType(t);
-    setMsg(m);
-    setToast(true);
-    setTimeout(() => setToast(false), 3000);
-  };
 
   useEffect(() => {
-    if (id) getPostDetails();
-  }, [id]);
+    // Nếu không có dữ liệu từ state, fetch từ API
+    if (!post && id) {
+      const fetchPost = async () => {
+        try {
+          const res = await api.get(`/posts/${id}`);
+          if (res.status === 200) {
+            setPost(res.data);
+          }
+        } catch (error) {
+          console.error("Error fetching post:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchPost();
+    }
+  }, [id, post]);
 
-  // === VIP BADGE ===
-  const renderVipBadge = () => {
-    if (!post?.isVip || !post?.vipTier) return null;
-    const tiers = {
-      silver: { label: "VIP Bạc", color: "text-gray-700", bg: "bg-gray-100" },
-      gold: { label: "VIP Vàng", color: "text-yellow-700", bg: "bg-yellow-100" },
-      platinum: { label: "VIP Bạch kim", color: "text-cyan-700", bg: "bg-cyan-100" },
-      diamond: { label: "VIP Kim cương", color: "text-purple-700", bg: "bg-purple-100" }
-    };
-    const info = tiers[post.vipTier.toLowerCase()] || tiers.silver;
-    return (
-      <div className={`absolute top-4 left-4 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold shadow-md ${info.bg} ${info.color}`}>
-        <Star className="w-4 h-4 fill-current" />
-        {info.label}
-      </div>
-    );
+  const formatPrice = (price) => {
+    if (!price) return "Liên hệ";
+    return Number(price).toLocaleString("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    });
   };
 
-  // === ĐỊNH DẠNG ===
-  const formatPrice = (price) => (!price ? "Liên hệ" : Number(price).toLocaleString("vi-VN") + " ₫");
-  const formatDate = (date) => new Date(date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Header />
+        <main className="py-12">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p className="text-gray-600">Đang tải...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
 
       <main className="py-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Quay lại */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
-            <Link to="/" className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+            <Link to="/" className="text-sm text-gray-600 hover:underline">
               ← Về trang chủ
             </Link>
           </div>
 
-          {/* LOADING */}
-          {loading ? (
-            <div className="bg-white rounded-2xl shadow-md p-12 text-center">
-              <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-              <p className="mt-3 text-gray-500">Đang tải chi tiết...</p>
-            </div>
-          ) : post ? (
-            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              {/* Ảnh + VIP */}
+          {post ? (
+            <div className="bg-white shadow-lg rounded-2xl overflow-hidden">
+              {/* Hình ảnh */}
               <div className="relative">
-                <img
-                  src={post.thumbnail || post.image?.[0] || "https://cdn.thepennyhoarder.com/wp-content/uploads/2022/05/21141022/hybrid-vs-electric-final.jpg"}
-                  alt={post.title}
-                  className="w-full h-64 md:h-80 object-cover"
-                />
-                {renderVipBadge()}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-100">
+                  {post.image && post.image.length > 0 ? (
+                    post.image.map((img, index) => (
+                      <img
+                        key={index}
+                        src={img}
+                        alt={`${post.title} - ${index + 1}`}
+                        className="w-full h-64 object-cover rounded-lg"
+                      />
+                    ))
+                  ) : (
+                    <img
+                      src="https://cdn.thepennyhoarder.com/wp-content/uploads/2022/05/21141022/hybrid-vs-electric-final.jpg"
+                      alt={post.title}
+                      className="w-full h-64 object-cover rounded-lg"
+                    />
+                  )}
+                </div>
+                {post.isVip && (
+                  <div className="absolute top-8 left-8 bg-yellow-400 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                    VIP - {post.vipTier}
+                  </div>
+                )}
               </div>
 
-              <div className="p-6 md:p-8">
-                {/* Tiêu đề + Người đăng */}
+              {/* Thông tin chi tiết */}
+              <div className="p-8">
+                <div className="border-b pb-6 mb-6">
+                  <h1 className="text-3xl font-bold mb-3 text-gray-900">
+                    {post.title}
+                  </h1>
+                  <p className="text-3xl text-green-600 font-bold mb-4">
+                    {formatPrice(post.price)}
+                  </p>
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <p>
+                      Người đăng:{" "}
+                      <span className="font-semibold">
+                        {post.User?.username || post.username || "N/A"}
+                      </span>
+                    </p>
+                    {post.phone && (
+                      <p>
+                        Số điện thoại:{" "}
+                        <span className="font-semibold">{post.phone}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Mô tả */}
                 <div className="mb-6">
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">{post.title}</h1>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <User className="w-4 h-4" />
-                    <span className="font-medium">
-                      {post?.User?.username || "Ẩn danh"}
-                    </span>
-                  </div>
+                  <h2 className="text-xl font-semibold mb-3 text-gray-900">
+                    Mô tả
+                  </h2>
+                  <p className="text-gray-700 whitespace-pre-line">
+                    {post.content}
+                  </p>
                 </div>
 
-                {/* Giá + Trạng thái */}
-                <div className="flex flex-wrap items-center gap-4 mb-6">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-6 h-6 text-green-600" />
-                    <span className="text-2xl font-bold text-green-600">{formatPrice(post.price)}</span>
-                  </div>
-                  {post.verifyStatus === "verify" && (
-                    <div className="flex items-center gap-1">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-green-600 font-medium">Đã duyệt</span>
+                {/* Thông tin xe điện */}
+                {(post.brand ||
+                  post.model ||
+                  post.year ||
+                  post.mileage ||
+                  post.color ||
+                  post.condition) && (
+                    <div className="mb-6">
+                      <h2 className="text-xl font-semibold mb-4 text-gray-900">
+                        Thông tin xe
+                      </h2>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                        {post.brand && (
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">Hãng xe</p>
+                            <p className="font-semibold text-gray-900">
+                              {post.brand}
+                            </p>
+                          </div>
+                        )}
+                        {post.model && (
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">Model</p>
+                            <p className="font-semibold text-gray-900">
+                              {post.model}
+                            </p>
+                          </div>
+                        )}
+                        {post.year && (
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Năm sản xuất
+                            </p>
+                            <p className="font-semibold text-gray-900">
+                              {post.year}
+                            </p>
+                          </div>
+                        )}
+                        {post.mileage && (
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Số km đã đi
+                            </p>
+                            <p className="font-semibold text-gray-900">
+                              {Number(post.mileage).toLocaleString()} km
+                            </p>
+                          </div>
+                        )}
+                        {post.color && (
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">Màu sắc</p>
+                            <p className="font-semibold text-gray-900">
+                              {post.color}
+                            </p>
+                          </div>
+                        )}
+                        {post.condition && (
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Tình trạng
+                            </p>
+                            <p className="font-semibold text-gray-900">
+                              {post.condition}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
-                </div>
 
-                {/* Thông tin cơ bản */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-gray-700">
-                  {post.brand && (
-                    <div className="flex items-center gap-3">
-                      <Tag className="w-5 h-5 text-gray-500" />
-                      <div>
-                        <p className="text-sm text-gray-500">Hãng xe</p>
-                        <p className="font-medium">{post.brand}</p>
+                {/* Thông tin pin */}
+                {(post.battery_brand ||
+                  post.battery_model ||
+                  post.battery_capacity ||
+                  post.battery_type ||
+                  post.battery_range ||
+                  post.battery_condition ||
+                  post.charging_time) && (
+                    <div className="mb-6">
+                      <h2 className="text-xl font-semibold mb-4 text-gray-900">
+                        Thông tin pin
+                      </h2>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                        {post.battery_brand && (
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">Hãng pin</p>
+                            <p className="font-semibold text-gray-900">
+                              {post.battery_brand}
+                            </p>
+                          </div>
+                        )}
+                        {post.battery_model && (
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Model pin
+                            </p>
+                            <p className="font-semibold text-gray-900">
+                              {post.battery_model}
+                            </p>
+                          </div>
+                        )}
+                        {post.battery_type && (
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">Loại pin</p>
+                            <p className="font-semibold text-gray-900">
+                              {post.battery_type}
+                            </p>
+                          </div>
+                        )}
+                        {post.battery_capacity && (
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Dung lượng pin
+                            </p>
+                            <p className="font-semibold text-gray-900">
+                              {post.battery_capacity} kWh
+                            </p>
+                          </div>
+                        )}
+                        {post.battery_range && (
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Quãng đường di chuyển
+                            </p>
+                            <p className="font-semibold text-gray-900">
+                              {post.battery_range} km
+                            </p>
+                          </div>
+                        )}
+                        {post.battery_condition && (
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Tình trạng pin
+                            </p>
+                            <p className="font-semibold text-gray-900">
+                              {post.battery_condition}
+                            </p>
+                          </div>
+                        )}
+                        {post.charging_time && (
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Thời gian sạc
+                            </p>
+                            <p className="font-semibold text-gray-900">
+                              {post.charging_time} giờ
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
-                  {post.model && (
-                    <div className="flex items-center gap-3">
-                      <Tag className="w-5 h-5 text-gray-500" />
-                      <div>
-                        <p className="text-sm text-gray-500">Dòng xe</p>
-                        <p className="font-medium">{post.model}</p>
-                      </div>
-                    </div>
-                  )}
-                  {post.category && (
-                    <div className="flex items-center gap-3">
-                      <Tag className="w-5 h-5 text-gray-500" />
-                      <div>
-                        <p className="text-sm text-gray-500">Danh mục</p>
-                        <p className="font-medium capitalize">{post.category}</p>
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-3">
-                    <Calendar className="w-5 h-5 text-gray-500" />
-                    <div>
-                      <p className="text-sm text-gray-500">Ngày đăng</p>
-                      <p className="font-medium">{formatDate(post.createdAt)}</p>
-                    </div>
-                  </div>
-                  {post.updatedAt && (
-                    <div className="flex items-center gap-3">
-                      <Calendar className="w-5 h-5 text-gray-500" />
-                      <div>
-                        <p className="text-sm text-gray-500">Cập nhật</p>
-                        <p className="font-medium">{formatDate(post.updatedAt)}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* MÔ TẢ */}
-                {post.content && (
-                  <div className="mb-8">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Mô tả chi tiết</h3>
-                    <p className="text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded-lg leading-relaxed">{post.content}</p>
-                  </div>
-                )}
-
-                {/* PIN KÈM THEO */}
-                {post.hasBattery && (
-                  <div className="mb-8 p-6 bg-blue-50 rounded-xl border border-blue-200">
-                    <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
-                      <Battery className="w-6 h-6" /> Thông tin pin kèm theo
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      {post.battery_brand && (
-                        <div>
-                          <p className="text-gray-600">Thương hiệu pin</p>
-                          <p className="font-medium">{post.battery_brand}</p>
-                        </div>
-                      )}
-                      {post.battery_model && (
-                        <div>
-                          <p className="text-gray-600">Model pin</p>
-                          <p className="font-medium">{post.battery_model}</p>
-                        </div>
-                      )}
-                      {post.battery_capacity != null && (
-                        <div>
-                          <p className="text-gray-600">Dung lượng</p>
-                          <p className="font-medium">{post.battery_capacity} kWh</p>
-                        </div>
-                      )}
-                      {post.battery_type && (
-                        <div>
-                          <p className="text-gray-600">Loại pin</p>
-                          <p className="font-medium">{post.battery_type}</p>
-                        </div>
-                      )}
-                      {post.battery_range != null && (
-                        <div>
-                          <p className="text-gray-600">Tầm hoạt động</p>
-                          <p className="font-medium">{post.battery_range} km</p>
-                        </div>
-                      )}
-                      {post.battery_condition && (
-                        <div>
-                          <p className="text-gray-600">Tình trạng pin</p>
-                          <p className="font-medium">{post.battery_condition}</p>
-                        </div>
-                      )}
-                      {post.charging_time != null && (
-                        <div>
-                          <p className="text-gray-600">Thời gian sạc</p>
-                          <p className="font-medium">{post.charging_time} giờ</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
 
                 {/* Nút hành động */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <button className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-full hover:bg-blue-700 transition font-medium text-lg shadow-md">
-                    Gửi yêu cầu mua
+                <div className="flex gap-4 pt-6">
+                  <button className="flex-1 bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors font-medium">
+                    Gửi yêu cầu mua xe
                   </button>
-                  <button className="flex-1 border border-gray-300 text-gray-900 py-3 px-6 rounded-full hover:bg-gray-50 transition font-medium text-lg">
-                    Yêu cầu thêm thông tin
+                  <button className="flex-1 border-2 border-gray-300 text-gray-900 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium">
+                    Liên hệ người bán
                   </button>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl shadow-md p-12 text-center">
-              <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Không tìm thấy bài đăng</h2>
-              <p className="text-gray-600 mb-4">ID: {id}</p>
-              <Link to="/" className="inline-block bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700">
-                Quay lại trang chủ
-              </Link>
+            <div className="bg-white shadow rounded-lg p-6 text-center">
+              <h2 className="text-xl font-semibold mb-2">
+                Chi tiết xe không tìm thấy
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Không có dữ liệu chi tiết cho xe id: {id}
+              </p>
+              <div>
+                <Link
+                  to="/"
+                  className="inline-block bg-gray-900 text-white px-4 py-2 rounded-md"
+                >
+                  Quay lại
+                </Link>
+              </div>
             </div>
           )}
         </div>
@@ -282,7 +316,7 @@ function CarDetails() {
 
       <Footer />
 
-      {toast && <Toast type={type} msg={msg} />}
+
     </div>
   );
 }

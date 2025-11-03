@@ -3,41 +3,21 @@ import { Link } from "react-router-dom";
 import { api } from "../../services/api";
 import Toast from "../Toast";
 import { useNavigate } from "react-router-dom";
-import { Star } from "lucide-react";
 
-const CarListing = () => {
+const BatteryListing = () => {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [msg, setMsg] = useState("");
   const [toast, setToast] = useState(false);
   const [type, setType] = useState("");
 
-  const renderVipBadge = (post) => {
-    if (!post.isVip || !post.vipTier) return null;
-
-    const tiers = {
-      silver: { label: "VIP Bạc", color: "text-gray-700", bg: "bg-gray-100" },
-      gold: { label: "VIP Vàng", color: "text-yellow-700", bg: "bg-yellow-100" },
-      platinum: { label: "VIP Bạch kim", color: "text-cyan-700", bg: "bg-cyan-100" },
-      diamond: { label: "VIP Kim cương", color: "text-purple-700", bg: "bg-purple-100" }
-    };
-
-    const info = tiers[post.vipTier.toLowerCase()] || tiers.silver;
-
-    return (
-      <div className={`absolute top-4 left-4 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold shadow-md ${info.bg} ${info.color}`}>
-        <Star className="w-4 h-4 fill-current" />
-        {info.label}
-      </div>
-    );
-  };
-
   async function handleRequest(id) {
     console.log(id);
+
     try {
       const res = await api.post("/PurchaseRequests", {
         postId: id,
-        message: "Tôi muốn mua xe này",
+        message: "Tôi muốn mua pin này",
       });
       console.log(res);
       if (res.status === 201) {
@@ -49,7 +29,7 @@ const CarListing = () => {
       console.log(error);
       const status = error?.status;
       const msg = error?.response?.data?.message;
-      let errorMsg = "Không thể yêu cầu mua xe";
+      let errorMsg = "Không thể yêu cầu mua pin";
 
       setToast(true);
       setType("error");
@@ -82,16 +62,16 @@ const CarListing = () => {
       if (res.status === 200 || res.status === 304) {
         const allPosts = res.data.data || res.data;
         console.log("All posts:", allPosts);
-        console.log("Total posts:", allPosts.length);
 
-        // Chỉ lấy các bài đã được xác thực (verifyStatus === "verify")
-        const verifiedPosts = allPosts.filter(
-          (post) => post.verifyStatus === "verify"
+        // Chỉ lấy các bài có category = "battery" và verifyStatus = "verify"
+        const batteryPosts = allPosts.filter(
+          (post) =>
+            post.category === "battery" && post.verifyStatus === "verify"
         );
-        console.log("Verified posts:", verifiedPosts);
-        console.log("Verified posts count:", verifiedPosts.length);
+        console.log("Battery posts:", batteryPosts);
+        console.log("Battery posts count:", batteryPosts.length);
 
-        setPosts(verifiedPosts);
+        setPosts(batteryPosts);
       }
     } catch (error) {
       console.error("Error fetching posts:", error);
@@ -118,18 +98,18 @@ const CarListing = () => {
         {/* Tiêu đề */}
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Xe điện nổi bật
+            Pin xe điện
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Khám phá những chiếc xe điện đã qua sử dụng chất lượng tốt nhất
+            Khám phá các loại pin xe điện chất lượng cao, đã qua kiểm định
           </p>
         </div>
 
-        {/* Danh sách xe */}
+        {/* Danh sách pin */}
         {posts.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg mb-2">
-              Chưa có bài đăng nào được xác thực
+              Chưa có bài đăng pin nào được xác thực
             </p>
             <p className="text-gray-400 text-sm">Vui lòng quay lại sau</p>
           </div>
@@ -148,7 +128,7 @@ const CarListing = () => {
                     src={
                       post.image && post.image.length > 0
                         ? post.image[0]
-                        : "https://cdn.thepennyhoarder.com/wp-content/uploads/2022/05/21141022/hybrid-vs-electric-final.jpg"
+                        : "https://afdc.energy.gov/files/u/publication/ev_battery_closeup.jpg"
                     }
                     alt={post.title}
                     className="w-full h-56 object-cover"
@@ -171,8 +151,29 @@ const CarListing = () => {
                     {post.content}
                   </p>
 
-                  <p className="text-gray-600 mb-4 line-clamp-2">
-                    {post.username}
+                  {/* Thông tin pin */}
+                  {post.battery_capacity && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                      <span className="font-medium">⚡ Dung lượng:</span>
+                      <span>{post.battery_capacity} kWh</span>
+                    </div>
+                  )}
+                  {post.battery_range && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                      <span className="font-medium">🚗 Quãng đường:</span>
+                      <span>{post.battery_range} km</span>
+                    </div>
+                  )}
+                  {post.battery_condition && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                      <span className="font-medium">✅ Tình trạng:</span>
+                      <span>{post.battery_condition}</span>
+                    </div>
+                  )}
+
+                  <p className="text-gray-600 mb-4 text-sm">
+                    Người đăng:{" "}
+                    <span className="font-semibold">{post.username}</span>
                   </p>
 
                   {/* Giá tiền */}
@@ -186,7 +187,7 @@ const CarListing = () => {
                   {/* Nút */}
                   <div className="flex space-x-3">
                     <Link
-                      to={`/listing/ev/${post.id}`}
+                      to={`/listing/battery/${post.id}`}
                       state={{ post }}
                       className="flex-1"
                     >
@@ -211,7 +212,7 @@ const CarListing = () => {
         {posts.length > 0 && (
           <div className="text-center mt-12">
             <button className="bg-gray-900 text-white px-8 py-3 rounded-md hover:bg-gray-800 transition-colors font-medium">
-              Xem tất cả xe điện
+              Xem tất cả pin
             </button>
           </div>
         )}
@@ -221,4 +222,4 @@ const CarListing = () => {
   );
 };
 
-export default CarListing;
+export default BatteryListing;
