@@ -35,19 +35,16 @@ import PackageSelection from "./pages/Listing/PackageSelection";
 import PaymentStep from "./pages/Listing/PaymentStep";
 import BuyRequests from "./pages/BuyRequests";
 import LayoutAdmin from "./components/LayoutAdmin";
-
 import PostManagement from "./pages/PostManagement";
-import BuyerContractManagement from "./pages/BuyerContractManagement";
-import SellerContractManagement from "./pages/SellerContractManagement";
 import RequestManagement from "./components/RequestManagement";
+import ContractManagement from "./pages/ContractManagement.jsx";
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
-          <Route path="/buyer-contract-management" element={<BuyerContractManagement />} />
-          <Route path="/seller-contract-management" element={<SellerContractManagement />} />
+          <Route path="/contract-management" element={<ContractManagement />} />
           <Route path="/postmanagement" element={<PostManagement />} />
           <Route path="/confirmation" element={<Confirmation />} />
           <Route path="/success" element={<Success />} />
