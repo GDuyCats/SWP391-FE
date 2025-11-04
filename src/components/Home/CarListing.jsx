@@ -64,14 +64,15 @@ const CarListing = () => {
         console.log("All posts:", allPosts);
         console.log("Total posts:", allPosts.length);
 
-        // Chỉ lấy các bài đã được xác thực (verifyStatus === "verify")
-        const verifiedPosts = allPosts.filter(
-          (post) => post.verifyStatus === "verify"
+        // Chỉ lấy các bài có category = "ev" và verifyStatus = "verify"
+        const evPosts = allPosts.filter(
+          (post) =>
+            post.category === "vehicle" && post.verifyStatus === "verify"
         );
-        console.log("Verified posts:", verifiedPosts);
-        console.log("Verified posts count:", verifiedPosts.length);
+        console.log("EV posts:", evPosts);
+        console.log("EV posts count:", evPosts.length);
 
-        setPosts(verifiedPosts);
+        setPosts(evPosts);
       }
     } catch (error) {
       console.error("Error fetching posts:", error);
