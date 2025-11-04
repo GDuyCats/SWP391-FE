@@ -55,11 +55,9 @@ export default function TransactionDetail() {
   /* ===== state ===== */
   const [buyerFeePercent, setBuyerFeePercent] = useState("");
   const [sellerFeePercent, setSellerFeePercent] = useState("");
-
   const [carPriceInput, setCarPriceInput] = useState("");
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [finalCarPrice, setFinalCarPrice] = useState(null);
-
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [buyerConfirmed, setBuyerConfirmed] = useState(false);
   const [sellerConfirmed, setSellerConfirmed] = useState(false);
@@ -114,6 +112,7 @@ export default function TransactionDetail() {
     if (isNaN(p) || p < 0) return 0;
     return Math.round((carPrice * p) / 100);
   };
+
   const getBuyerFee = () => calculateFeeFromPercent(buyerFeePercent);
   const getSellerFee = () => calculateFeeFromPercent(sellerFeePercent);
 
@@ -133,7 +132,6 @@ export default function TransactionDetail() {
     const buyerPercent = Number(buyerFeePercent || 0);
     const buyerFee = Math.round((price * buyerPercent) / 100);
     const buyerTotal = price + buyerFee;
-
     const url = new URL(linkForA(recordData.id));
     url.searchParams.set("contractId", String(recordData.id));
     url.searchParams.set("price", String(price));
@@ -148,7 +146,6 @@ export default function TransactionDetail() {
     const sellerPercent = Number(sellerFeePercent || 0);
     const sellerFee = Math.round((price * sellerPercent) / 100);
     const sellerTotal = price - sellerFee;
-
     const url = new URL(linkForB(recordData.id));
     url.searchParams.set("contractId", String(recordData.id));
     url.searchParams.set("price", String(price));
@@ -161,8 +158,7 @@ export default function TransactionDetail() {
   /* ===== Email HTML đơn giản ===== */
   const makeEmailHtml = ({ title, lines = [], ctaUrl, ctaLabel }) => {
     const li = lines.map((l) => `<li>${l}</li>`).join("");
-    return `
-    <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111">
+    return `<div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111">
       <h2 style="margin:0 0 8px">${title}</h2>
       <ul style="padding-left:18px;margin:8px 0">${li}</ul>
       <p style="margin:16px 0">
@@ -256,8 +252,7 @@ export default function TransactionDetail() {
       finalPrice: price,
       buyerFeePercent: Number(buyerFeePercent || 0),
       sellerFeePercent: Number(sellerFeePercent || 0),
-
-      // Trường phẳng để BE forward email ngay cả khi không đọc nested
+      // phẳng để BE forward email
       toRole: email.toRole,
       subject: email.subject,
       text: email.text,
@@ -359,7 +354,9 @@ export default function TransactionDetail() {
       setToast({ type: "success", message: res?.data?.message || "Đã gửi hợp đồng hoàn tất" });
       setShowFinalConfirm(false);
       setTimeout(() => {
-        navigate("/transactionsuccess", { state: { record: { ...recordData, status: "completed" } } });
+        navigate("/transactionsuccess", {
+          state: { record: { ...recordData, status: "completed" } },
+        });
       }, 800);
     } catch (error) {
       const s = error?.response?.status;
@@ -386,7 +383,10 @@ export default function TransactionDetail() {
           <main className="flex-1 py-8 px-6">
             <div className="max-w-7xl mx-auto text-center">
               <p className="text-gray-600 mb-4">Không tìm thấy thông tin hồ sơ</p>
-              <button onClick={() => navigate("/transactionrecords")} className="text-blue-600 hover:underline">
+              <button
+                onClick={() => navigate("/transactionrecords")}
+                className="text-blue-600 hover:underline"
+              >
                 Quay lại danh sách hồ sơ
               </button>
             </div>
@@ -417,7 +417,9 @@ export default function TransactionDetail() {
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 Quay lại danh sách hồ sơ
               </button>
-              <h1 className="text-3xl font-bold text-gray-900">Chi tiết hồ sơ - {recordData.id}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Chi tiết hồ sơ - {recordData.id}
+              </h1>
               <p className="text-gray-600 mt-2">Điền thông tin các khoản phí cho giao dịch</p>
             </div>
 
@@ -457,10 +459,13 @@ export default function TransactionDetail() {
                     <p className="text-sm text-gray-600 mb-2">
                       {finalCarPrice !== null ? "Giá trị xe đã được chốt:" : "Chưa chốt giá trị xe cuối cùng"}
                     </p>
-                    <p className="text-3xl font-bold text-yellow-700">{formatCurrency(getCarPrice())} VNĐ</p>
+                    <p className="text-3xl font-bold text-yellow-700">
+                      {formatCurrency(getCarPrice())} VNĐ
+                    </p>
                     {finalCarPrice !== null && (
                       <p className="text-xs text-green-600 mt-1 flex items-center">
-                        <CheckCircle className="w-4 h-4 mr-1" /> Đã chốt giá
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Đã chốt giá
                       </p>
                     )}
                   </div>
@@ -490,7 +495,10 @@ export default function TransactionDetail() {
                       />
                       {carPriceInput && (
                         <p className="mt-2 text-sm text-gray-600">
-                          Giá trị: <span className="font-semibold text-yellow-700">{formatCurrency(carPriceInput)} VNĐ</span>
+                          Giá trị:{" "}
+                          <span className="font-semibold text-yellow-700">
+                            {formatCurrency(carPriceInput)} VNĐ
+                          </span>
                         </p>
                       )}
                     </div>
@@ -499,7 +507,8 @@ export default function TransactionDetail() {
                         onClick={handleConfirmPrice}
                         className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
                       >
-                        <CheckCircle className="w-5 h-5" /> Xác nhận
+                        <CheckCircle className="w-5 h-5" />
+                        Xác nhận
                       </button>
                       <button
                         onClick={() => {
@@ -539,14 +548,21 @@ export default function TransactionDetail() {
                     }}
                     error={errors.buyerFeePercent}
                   />
+
                   <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                     <div className="text-sm text-gray-600 mb-2">
-                      Giá trị xe: <span className="font-semibold text-gray-900">{formatCurrency(getCarPrice())} VNĐ</span>
+                      Giá trị xe:{" "}
+                      <span className="font-semibold text-gray-900">
+                        {formatCurrency(getCarPrice())} VNĐ
+                      </span>
                     </div>
                     <div className="text-sm text-gray-600 mb-1">
-                      Công thức: <span className="font-medium">{(parseFloat(buyerFeePercent || 0) || 0)}%</span> ×{" "}
+                      Công thức:{" "}
+                      <span className="font-medium">{(parseFloat(buyerFeePercent || 0) || 0)}%</span> ×{" "}
                       <span className="font-medium">{formatCurrency(getCarPrice())}</span> ={" "}
-                      <span className="font-semibold text-blue-600">{formatCurrency(getBuyerFee())} VNĐ</span>
+                      <span className="font-semibold text-blue-600">
+                        {formatCurrency(getBuyerFee())} VNĐ
+                      </span>
                     </div>
                     <div className="text-sm text-gray-600">
                       Phí phải trả:{" "}
@@ -555,11 +571,14 @@ export default function TransactionDetail() {
                       </span>
                     </div>
                   </div>
+
                   <div className="mt-6 pt-4 border-t border-gray-200">
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-semibold text-gray-900">Tổng buyer phải thanh toán:</span>
                       <span className="text-xl font-bold text-blue-600">
-                        {hideBuyerDetails ? maskText : `${formatCurrency(getCarPrice() + getBuyerFee())} VNĐ`}
+                        {hideBuyerDetails
+                          ? maskText
+                          : `${formatCurrency(getCarPrice() + getBuyerFee())} VNĐ`}
                       </span>
                     </div>
                   </div>
@@ -587,14 +606,21 @@ export default function TransactionDetail() {
                     }}
                     error={errors.sellerFeePercent}
                   />
+
                   <div className="mt-4 p-4 bg-green-50 rounded-lg">
                     <div className="text-sm text-gray-600 mb-2">
-                      Giá trị xe: <span className="font-semibold text-gray-900">{formatCurrency(getCarPrice())} VNĐ</span>
+                      Giá trị xe:{" "}
+                      <span className="font-semibold text-gray-900">
+                        {formatCurrency(getCarPrice())} VNĐ
+                      </span>
                     </div>
                     <div className="text-sm text-gray-600 mb-1">
-                      Công thức: <span className="font-medium">{(parseFloat(sellerFeePercent || 0) || 0)}%</span> ×{" "}
+                      Công thức:{" "}
+                      <span className="font-medium">{(parseFloat(sellerFeePercent || 0) || 0)}%</span> ×{" "}
                       <span className="font-medium">{formatCurrency(getCarPrice())}</span> ={" "}
-                      <span className="font-semibold text-green-600">{formatCurrency(getSellerFee())} VNĐ</span>
+                      <span className="font-semibold text-green-600">
+                        {formatCurrency(getSellerFee())} VNĐ
+                      </span>
                     </div>
                     <div className="text-sm text-gray-600">
                       Phí phải trả:{" "}
@@ -603,11 +629,14 @@ export default function TransactionDetail() {
                       </span>
                     </div>
                   </div>
+
                   <div className="mt-6 pt-4 border-t border-gray-200">
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-semibold text-gray-900">Tổng seller nhận được:</span>
                       <span className="text-xl font-bold text-green-600">
-                        {hideSellerDetails ? maskText : `${formatCurrency(getCarPrice() - getSellerFee())} VNĐ`}
+                        {hideSellerDetails
+                          ? maskText
+                          : `${formatCurrency(getCarPrice() - getSellerFee())} VNĐ`}
                       </span>
                     </div>
                   </div>
@@ -618,6 +647,7 @@ export default function TransactionDetail() {
             {/* GỬI HỒ SƠ */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Gửi hồ sơ xác nhận</h3>
+
               {(buyerRecordSent || sellerRecordSent) && (
                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                   <div className="flex items-center gap-2 text-sm">
@@ -634,6 +664,7 @@ export default function TransactionDetail() {
                   </div>
                 </div>
               )}
+
               <div className="flex flex-col md:flex-row gap-3">
                 <button
                   onClick={handleSendRecordToBoth}
@@ -670,6 +701,7 @@ export default function TransactionDetail() {
                   <h3 className="text-lg font-semibold text-gray-900">Các bước tiếp theo</h3>
                   <p className="text-sm text-gray-600 mt-1">Có thể gửi OTP bất cứ lúc nào.</p>
                 </div>
+
                 <div className="flex items-center gap-3">
                   <button
                     onClick={handleSendOtpCode}
@@ -705,7 +737,8 @@ export default function TransactionDetail() {
                       }}
                       className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-green-700 transition-all font-medium shadow-lg"
                     >
-                      <CheckCircle className="w-5 h-5" /> Xác nhận giao dịch
+                      <CheckCircle className="w-5 h-5" />
+                      Xác nhận giao dịch
                     </button>
                   )}
                 </div>
@@ -725,7 +758,10 @@ export default function TransactionDetail() {
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Trạng thái xác nhận</h2>
-                <button onClick={() => setShowConfirmModal(false)} className="text-gray-400 hover:text-gray-600">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -838,7 +874,10 @@ export default function TransactionDetail() {
 
       {/* Modal xác nhận cuối */}
       {showFinalConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
             <div className="p-6">
               <div className="text-center mb-6">
@@ -848,6 +887,7 @@ export default function TransactionDetail() {
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Xác nhận giao dịch</h2>
                 <p className="text-gray-600">Bạn có chắc chắn muốn hoàn tất giao dịch này không?</p>
               </div>
+
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
@@ -868,11 +908,14 @@ export default function TransactionDetail() {
                   </div>
                 </div>
               </div>
+
               <div className="flex gap-3">
                 <button
                   onClick={handleFinalConfirmYes}
                   disabled={finalSending}
-                  className={`flex-1 py-3 px-4 ${finalSending ? "bg-blue-300 cursor-wait" : "bg-blue-600 hover:bg-blue-700"} text-white rounded-lg transition-colors font-medium`}
+                  className={`flex-1 py-3 px-4 ${
+                    finalSending ? "bg-blue-300 cursor-wait" : "bg-blue-600 hover:bg-blue-700"
+                  } text-white rounded-lg transition-colors font-medium`}
                 >
                   {finalSending ? "Đang gửi..." : "Có, hoàn tất"}
                 </button>
