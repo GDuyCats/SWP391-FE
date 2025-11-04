@@ -1,6 +1,7 @@
 import {api} from "../services/api.js";
 import {useEffect, useState} from "react";
 import {FileText, User, Calendar} from 'lucide-react';
+import Toast from "../components/Toast.jsx";
 
 function ContractManagement() {
     const [contracts, setContracts] = useState([]);
@@ -73,7 +74,7 @@ function ContractManagement() {
             {/* Header */}
             <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
                 <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    <FileText className="w-7 h-7 text-blue-600"/>
+                    <FileText className="w-7 h-7 text-blue-600" />
                     Quản Lý Hợp Đồng
                 </h1>
                 <p className="text-gray-600 mt-1">Các hợp đồng chưa ký cần xử lý</p>
@@ -85,97 +86,76 @@ function ContractManagement() {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Mã hợp đồng
-                            </th>
-                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Người mua
-                            </th>
-                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Người bán
-                            </th>
-                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Staff
-                            </th>
-                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Loại
-                            </th>
-                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Giá trị
-                            </th>
-                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Thời gian
-                            </th>
-                            <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Hành động
-                            </th>
+                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Hợp Đồng</th>
+                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người Mua</th>
+                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người Bán</th>
+                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Staff</th>
+                            <th className="px-6 py-4 text-center w-28 text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
+                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá Trị</th>
+                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cập Nhật</th>
+                            <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
                         </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                         {contracts.length === 0 ? (
                             <tr>
                                 <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                                    <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300"/>
+                                    <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                                     <p className="text-lg">Không có hợp đồng nào cần xử lý</p>
                                 </td>
                             </tr>
                         ) : (
-                            <>
-                                {contracts.map((contract) => (
+                            contracts.map((contract) => (
                                 <tr key={contract.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    <td className="px-6 py-4 align-middle whitespace-nowrap text-sm font-medium text-gray-900">
                                         #{contract.id}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-gray-900">
-                                            {contract.buyer?.username || '—'}
-                                        </div>
-                                        <div className="text-sm text-gray-500">
-                                            ID: {contract.buyerId}
-                                        </div>
+
+                                    <td className="px-6 py-4 align-middle whitespace-nowrap">
+                                        <div className="text-sm font-medium text-gray-900">{contract.buyer?.username || '—'}</div>
+                                        <div className="text-sm text-gray-500">ID: {contract.buyerId}</div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-gray-900">
-                                            {contract.seller?.username || '—'}
-                                        </div>
-                                        <div className="text-sm text-gray-500">
-                                            ID: {contract.sellerId}
-                                        </div>
+
+                                    <td className="px-6 py-4 align-middle whitespace-nowrap">
+                                        <div className="text-sm font-medium text-gray-900">{contract.seller?.username || '—'}</div>
+                                        <div className="text-sm text-gray-500">ID: {contract.sellerId}</div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-gray-900">
-                                            {contract.staff?.username || 'Chưa phân'}
-                                        </div>
-                                        <div className="text-sm text-gray-500">
-                                            ID: {contract.staffId || '—'}
-                                        </div>
+
+                                    <td className="px-6 py-4 align-middle whitespace-nowrap">
+                                        <div className="text-sm font-medium text-gray-900">{contract.staff?.username || 'Chưa phân'}</div>
+                                        <div className="text-sm text-gray-500">ID: {contract.staffId || '—'}</div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            <span className={`px-2 py-1 rounded-full text-xs ${
-                                                contract.side === 'buyer'
-                                                    ? 'bg-blue-100 text-blue-800'
-                                                    : 'bg-green-100 text-green-800'
-                                            }`}>
+
+                                    {/* Loại */}
+                                    <td className="px-6 py-4 align-middle whitespace-nowrap">
+                                        <div className="flex items-center justify-center h-full">
+                                            <span
+                                                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                                    contract.side === 'buyer' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                                                }`}
+                                            >
                                                 {contract.side === 'buyer' ? 'Mua' : 'Bán'}
                                             </span>
+                                        </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+
+                                    <td className="px-6 py-4 align-middle whitespace-nowrap text-sm font-medium text-gray-900">
                                         {formatCurrency(contract.agreedPrice)}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+
+                                    <td className="px-6 py-4 align-middle whitespace-nowrap text-sm text-gray-500">
                                         {formatDateTime(contract.updatedAt)}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                        <button className="text-blue-600 hover:text-blue-900 flex items-center gap-1">
-                                            <FileText className="w-4 h-4"/>
-                                            Ký OTP
+
+                                    {/* Hành động (căn giữa ngang + dọc) */}
+                                    <td className="px-6 py-4 align-middle whitespace-nowrap text-center">
+                                        <button className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-900 transition">
+                                            <FileText className="w-4 h-4" />
+                                            Kí OTP
                                         </button>
                                     </td>
                                 </tr>
-                                ))}
-                            </>
-
-
+                            ))
                         )}
                         </tbody>
                     </table>
@@ -183,15 +163,11 @@ function ContractManagement() {
             </div>
 
             {/* Toast */}
-            {toast && (
-                <div className={`fixed bottom-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
-                    type === "success" ? "bg-green-500" : "bg-red-500"
-                } text-white`}>
-                    {msg}
-                </div>
-            )}
+            {toast && msg && <Toast type={type} msg={msg} />}
         </div>
     );
+
+
 }
 
 export default ContractManagement;
