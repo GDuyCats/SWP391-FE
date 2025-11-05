@@ -75,7 +75,7 @@ export default function EVForm() {
       data.append("content", formData.content);
       data.append("price", formData.price);
       data.append("category", "vehicle");
-      data.append("hasBattery", String(formData.hasBattery));
+      data.append("hasBattery", formData.hasBattery ? "1" : "0");
 
       // Thông tin xe
       data.append("brand", formData.brand);
@@ -314,7 +314,6 @@ export default function EVForm() {
               </div>
             )}
           </section>
-
           {/* Hình ảnh */}
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4 border-b border-gray-300 pb-2">
