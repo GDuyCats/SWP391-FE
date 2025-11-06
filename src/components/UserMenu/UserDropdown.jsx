@@ -42,7 +42,7 @@ const UserDropdown = ({ username }) => {
               onClick={() => navigate("/buy-requests")}
               className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
             >
-              Quản lý yêu cầu mua xe
+              Quản lý yêu cầu mua pin
             </button>
 
             <button

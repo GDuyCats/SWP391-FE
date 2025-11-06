@@ -39,7 +39,7 @@ const AdminSidebar = () => {
             </svg>
           ),
         })}
-        {navItem({
+        {role === "admin" && navItem({
           to: "/users",
           label: "Quản lý người dùng",
           icon: (
@@ -48,7 +48,7 @@ const AdminSidebar = () => {
             </svg>
           ),
         })}
-        {navItem({
+        {role === "admin" && navItem({
           to: "/adminapprove",
           label: "Duyệt bài đăng",
           icon: (
@@ -57,7 +57,7 @@ const AdminSidebar = () => {
             </svg>
           ),
         })}
-        {navItem({
+        {role === "staff" && navItem({
           to: "/transactionrecords",
           label: "Hồ sơ mua bán",
           icon: (
@@ -76,7 +76,7 @@ const AdminSidebar = () => {
           ),
         })}
 
-        {navItem({
+        {role === "admin" && navItem({
           to: "/request-management",
           label: "Xác nhận yêu cầu",
           icon: (
