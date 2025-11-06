@@ -49,92 +49,53 @@ export default function TransactionRecords() {
     }
   }
 
-  // gọi API đúng endpoint: /staff/contracts/allContracts
-  useEffect(() => {
-    async function fetchContracts() {
-      setLoading(true);
+    useEffect(() => {
+        async function fetchContracts() {
+            setLoading(true);
 
-      try {
-        const res = await api.get("/staff/contracts/allContracts");
+            try {
+                const res = await api.get("/staff/contracts/allContracts");
+                const payload = res?.data || {};
+                const rawList = Array.isArray(payload.contracts) ? payload.contracts : [];
 
-        // kỳ vọng res.data giống swagger:
-        // {
-        //   "staffId": 5,
-        //   "total": 2,
-        //   "contracts": [
-        //     {
-        //       "id": 12,
-        //       "buyerId": 8,
-        //       "sellerId": 4,
-        //       "staffId": 5,
-        //       "status": "negotiating",
-        //       "updatedAt": "2025-10-16T13:22:00Z"
-        //     },
-        //     ...
-        //   ]
-        // }
+                const normalized = rawList.map((c) => {
+                    const statusLabel = mapStatusToLabel(c.status);
 
-        const payload = res?.data || {};
-        const rawList = Array.isArray(payload.contracts)
-          ? payload.contracts
-          : [];
+                    return {
+                        id: c.id,
+                        buyerName: c.buyer?.username || `Người mua #${c.buyerId}`,
+                        sellerName: c.seller?.username || `Người bán #${c.sellerId}`,
+                        transactionDate: c.updatedAt,
+                        staffManager: c.staffName || `Staff #${c.staffId}`,
+                        recordStatus: statusLabel,
+                        carModel: c.carModel || "(chưa cập nhật)",
+                        price: c.price
+                            ? `${Number(c.price).toLocaleString("vi-VN")} VNĐ`
+                            : "(chưa cập nhật)",
+                        notes: c.notes || "",
+                    };
+                });
 
-        // Chuẩn hóa cho UI
-        const normalized = rawList.map((c) => {
-          const statusLabel = mapStatusToLabel(c.status);
+                setRecords(normalized);
+                setToast({ type: "success", message: "Tải danh sách hồ sơ thành công" });
+            } catch (err) {
+                const status = err?.response?.status;
+                let msg = "Không thể tải danh sách hồ sơ. Vui lòng thử lại.";
 
-          return {
-            id: c.id,
-            buyerName: c.buyerName || `Người mua #${c.buyerId}`,
-            sellerName: c.sellerName || `Người bán #${c.sellerId}`,
-            transactionDate: c.updatedAt,
-            staffManager: c.staffName || `Staff #${c.staffId}`,
-            recordStatus: statusLabel,
+                if (status === 401) msg = "Phiên đăng nhập hết hạn.";
+                else if (status === 403) msg = "Bạn không có quyền truy cập.";
+                else if (status === 500) msg = "Lỗi máy chủ.";
 
-            carModel: c.carModel || "(chưa cập nhật)",
-            price: c.price
-              ? `${Number(c.price).toLocaleString("vi-VN")} VNĐ`
-              : "(chưa cập nhật)",
-            notes: c.notes || "",
-          };
-        });
-
-        setRecords(normalized);
-
-        setToast({
-          type: "success",
-          message: "Tải danh sách hồ sơ thành công",
-        });
-      } catch (err) {
-        const status = err?.response?.status;
-        const backendMsg = err?.response?.data?.message;
-
-        let msg =
-          backendMsg ||
-          "Không thể tải danh sách hồ sơ. Vui lòng thử lại.";
-
-        if (status === 401) {
-          msg = backendMsg || "Thiếu token hoặc token không hợp lệ.";
-          // có thể điều hướng về trang đăng nhập staff:
-          // navigate("/login");
-        } else if (status === 403) {
-          msg =
-            backendMsg ||
-            "Chỉ staff hoặc admin được phép xem danh sách này.";
-        } else if (status === 500) {
-          msg = backendMsg || "Lỗi máy chủ.";
+                setRecords([]);
+                setToast({ type: "error", message: msg });
+            } finally {
+                setLoading(false);
+                setTimeout(() => setToast(null), 3000);
+            }
         }
 
-        setRecords([]);
-        setToast({ type: "error", message: msg });
-      } finally {
-        setLoading(false);
-        setTimeout(() => setToast(null), 3000);
-      }
-    }
-
-    fetchContracts();
-  }, []);
+        fetchContracts();
+    }, []);
 
   // click "Chi tiết"
   function handleViewDetail(record) {

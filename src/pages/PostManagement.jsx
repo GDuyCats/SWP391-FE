@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Toast from "../components/Toast";
 import { Eye, Trash2 } from "lucide-react";
 import AlertDialog from "../components/AlertDialog";
+import PostDetailSellerDialog from "../components/PostDetailSellerDialog.jsx";
 
 function PostManagement() {
     const navigate = useNavigate();
@@ -12,7 +13,7 @@ function PostManagement() {
     const [toast, setToast] = useState(false);
     const [type, setType] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
-    const [id, setId] = useState(0);
+    const [selectedPost, setSelectedPost] = useState(null);
 
     async function getPostsByUser() {
         try {
@@ -47,34 +48,25 @@ function PostManagement() {
     async function handleDelete(id) {
         try {
             const res = await api.delete(`/delete/${id}`);
-            console.log(res);
             if (res.status === 200) {
+                setPosts(posts.filter((p) => p.id !== id));
                 setToast(true);
                 setType("success");
                 setMsg("Xóa bài đăng thành công");
             }
         } catch (error) {
-            console.log(error);
-            const status = error?.status;
+            const status = error?.response?.status;
             const msg = error?.response?.data;
             let errorMsg = "Không thể xóa bài đăng";
             setToast(true);
             setType("error");
-
-            if (status === 401) {
-                errorMsg = msg ? msg : "Unauthorize";
-            } else if (status === 404) {
-                errorMsg = msg ? msg : "Posts not found";
-            } else if (status === 500) {
-                errorMsg = msg ? msg : "Internal server error";
-            }
+            if (status === 401) errorMsg = msg || "Unauthorized";
+            else if (status === 404) errorMsg = msg || "Bài đăng không tồn tại";
+            else if (status === 500) errorMsg = msg || "Lỗi máy chủ";
             setMsg(errorMsg);
-
         } finally {
             setTimeout(() => setToast(false), 3000);
         }
-
-
     }
 
     useEffect(() => {
@@ -101,53 +93,51 @@ function PostManagement() {
                             </tr>
                         </thead>
                         <tbody>
-                            {posts.length > 0 ? (
-                                posts.map((post, index) => (
-                                    <tr
-                                        key={post.id}
-                                        className={`hover:bg-blue-50 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                                            }`}
-                                    >
-                                        <td className="border-b px-4 py-3">{post.id}</td>
-                                        <td className="border-b px-4 py-3 font-medium text-gray-900">
-                                            {post.title}
-                                        </td>
-                                        <td className="border-b px-4 py-3 text-gray-700">
-                                            {post.content}
-                                        </td>
-                                        <td className="border-b px-4 py-3 text-center">
-                                            <div className="flex justify-center gap-3">
-                                                <button
-
-                                                    className="text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
-                                                    title="Xem chi tiết"
-                                                >
-                                                    <Eye size={20} />
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        setOpenDialog(true);
-                                                        setId(post.id);
-                                                    }}
-                                                    className="text-red-600 hover:text-red-800 transition-colors cursor-pointer"
-                                                    title="Xóa bài đăng"
-                                                >
-                                                    <Trash2 size={20} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td
-                                        colSpan="4"
-                                        className="text-center py-6 text-gray-500 italic"
-                                    >
-                                        Không có bài đăng nào.
+                        {posts.length > 0 ? (
+                            posts.map((post, index) => (
+                                <tr
+                                    key={post.id}
+                                    className={`hover:bg-blue-50 transition-colors ${
+                                        index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                    }`}
+                                >
+                                    <td className="border-b px-4 py-3">{post.id}</td>
+                                    <td className="border-b px-4 py-3 font-medium text-gray-900">
+                                        {post.title}
+                                    </td>
+                                    <td className="border-b px-4 py-3 text-gray-700">
+                                        {post.content}
+                                    </td>
+                                    <td className="border-b px-4 py-3 text-center">
+                                        <div className="flex justify-center gap-3">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedPost(post.id);
+                                                    setOpenDialog(true);
+                                                }}
+                                                className="text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
+                                                title="Xem chi tiết"
+                                            >
+                                                <Eye size={20} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(post.id)}
+                                                className="text-red-600 hover:text-red-800 transition-colors cursor-pointer"
+                                                title="Xóa bài đăng"
+                                            >
+                                                <Trash2 size={20} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
-                            )}
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="4" className="text-center py-6 text-gray-500 italic">
+                                    Không có bài đăng nào.
+                                </td>
+                            </tr>
+                        )}
                         </tbody>
                     </table>
                 </div>
@@ -156,6 +146,11 @@ function PostManagement() {
                 open={openDialog}
                 onClose={() => setOpenDialog(false)}
                 handleDelete={() => handleDelete(id)}
+            />
+            <PostDetailSellerDialog
+                open={openDialog}
+                onClose={() => setOpenDialog(false)}
+                postId={selectedPost}
             />
             {toast && msg && (
                 <Toast type={type} msg={msg} />
