@@ -1,20 +1,18 @@
 import React, { useEffect, useState, useRef } from "react";
 import { X, Shield, Clock, CheckCircle } from "lucide-react";
 import Toast from "../components/Toast";
-import {api} from "../services/api.js";
+import { api } from "../services/api.js";
 
 export default function ContractOtpDialog({
                                               open,
                                               onClose,
                                               contractId,
-
                                           }) {
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const [resendCountdown, setResendCountdown] = useState(0);
     const [toast, setToast] = useState(false);
     const [type, setType] = useState("");
     const [msg, setMsg] = useState("");
-
     const inputRefs = useRef([]);
 
     useEffect(() => {
@@ -33,7 +31,6 @@ export default function ContractOtpDialog({
         const newOtp = [...otp];
         newOtp[index] = value.slice(-1);
         setOtp(newOtp);
-
         if (value && index < 5) {
             inputRefs.current[index + 1]?.focus();
         }
@@ -56,43 +53,42 @@ export default function ContractOtpDialog({
         }
 
         try {
-            const res = await api.post("/contracts/verify-otp");
-            console.log(res);
+            const res = await api.post("/contracts/verify-otp", { otp: otpCode, contractId });
+
             if (res.status === 200) {
-                setOtp(res.data);
-                setToast(true);
                 setType("success");
-                setMsg("Lấy danh sách bài đăng thành công");
+                setMsg("Ký hợp đồng thành công!");
+                setToast(true);
+                setTimeout(() => {
+                    setToast(false);
+                    onClose();
+                }, 2000);
             }
         } catch (error) {
-            console.log(error);
-            const status = error?.status;
-            const msg = error?.response?.data;
-            let errorMsg = "Không thể kí OTP";
-            setToast(true);
+            const status = error?.response?.status;
+            const data = error?.response?.data;
+
+            let errorMsg = "Không thể ký OTP";
             setType("error");
+
             if (status === 400) {
-                errorMsg = msg ? msg : "Mã OTP sai hoặc hợp đồng không hợp lệ";
-            } else if (status === 500) {
-                errorMsg = msg ? msg : "Lỗi máy chủ";
-                setTimeout(() => navigate("/login"), 2000);
+                errorMsg = data?.message || "Mã OTP sai hoặc hợp đồng không hợp lệ";
             } else if (status === 401) {
-                errorMsg = msg ? msg : "Thiếu hoặc token không hợp lệ"
+                errorMsg = data?.message || "Thiếu hoặc token không hợp lệ";
             } else if (status === 403) {
-                errorMsg = msg ? msg : "Người dùng không thuộc hợp đồng này"
+                errorMsg = data?.message || "Người dùng không thuộc hợp đồng này";
             } else if (status === 404) {
-                errorMsg = msg ? msg : "Không tìm thấy hợp đồng"
+                errorMsg = data?.message || "Không tìm thấy hợp đồng";
             } else if (status === 409) {
-                errorMsg = msg ? msg : "Bên này đã kí trước đó"
+                errorMsg = data?.message || "Bên này đã ký trước đó";
+            } else if (status === 500) {
+                errorMsg = data?.message || "Lỗi máy chủ";
             }
+
             setMsg(errorMsg);
-        } finally {
+            setToast(true);
             setTimeout(() => setToast(false), 3000);
         }
-
-
-
-
     };
 
     const handleResend = () => {
@@ -105,6 +101,9 @@ export default function ContractOtpDialog({
         setOtp(["", "", "", "", "", ""]);
         setTimeout(() => inputRefs.current[0]?.focus(), 100);
         setTimeout(() => setToast(false), 3000);
+
+        // Gọi API gửi lại OTP nếu cần
+        // api.post("/contracts/resend-otp", { contractId });
     };
 
     useEffect(() => {
@@ -141,74 +140,63 @@ export default function ContractOtpDialog({
                 {/* Thông báo OTP */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-center">
                     <p className="text-sm text-blue-800">
-                        <strong>Nhập OTP đã được nhân viên gửi</strong><strong className="font-mono"></strong>
+                        <strong>Nhập OTP đã được nhân viên gửi</strong>
                     </p>
                 </div>
 
-                {/* Loading */}
-                {loading ? (
-                    <div className="text-center py-8">
-                        <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-                        <p className="mt-3 text-gray-500">Đang xử lý ký hợp đồng...</p>
+                {/* Ô nhập OTP */}
+                <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-3 text-center">
+                        Nhập mã OTP (6 chữ số)
+                    </label>
+                    <div className="flex justify-center gap-2">
+                        {otp.map((digit, index) => (
+                            <input
+                                key={index}
+                                ref={el => inputRefs.current[index] = el}
+                                type="text"
+                                maxLength={1}
+                                value={digit}
+                                onChange={e => handleOtpChange(index, e.target.value)}
+                                onKeyDown={e => handleKeyDown(index, e)}
+                                className="w-12 h-12 text-center text-xl font-semibold border-2 rounded-lg focus:border-blue-500 focus:outline-none transition-all"
+                                style={{
+                                    borderColor: digit ? "#3B82F6" : "#D1D5DB",
+                                    backgroundColor: digit ? "#EFF6FF" : "#FAFAFA",
+                                }}
+                            />
+                        ))}
                     </div>
-                ) : (
-                    <>
-                        {/* Ô nhập OTP */}
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-3 text-center">
-                                Nhập mã OTP (6 chữ số)
-                            </label>
-                            <div className="flex justify-center gap-2">
-                                {otp.map((digit, index) => (
-                                    <input
-                                        key={index}
-                                        ref={el => inputRefs.current[index] = el}
-                                        type="text"
-                                        maxLength={1}
-                                        value={digit}
-                                        onChange={e => handleOtpChange(index, e.target.value)}
-                                        onKeyDown={e => handleKeyDown(index, e)}
-                                        className="w-12 h-12 text-center text-xl font-semibold border-2 rounded-lg focus:border-blue-500 focus:outline-none transition-all"
-                                        style={{
-                                            borderColor: digit ? "#3B82F6" : "#D1D5DB",
-                                            backgroundColor: digit ? "#EFF6FF" : "#FAFAFA",
-                                        }}
-                                        disabled={loading}
-                                    />
-                                ))}
-                            </div>
-                        </div>
+                </div>
 
-                        {/* Nút hành động */}
-                        <div className="space-y-3">
-                            <button
-                                onClick={handleConfirm}
-                                disabled={loading || otp.join("").length !== 6}
-                                className={`w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2
-                  ${loading || otp.join("").length !== 6
-                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                    : "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-blue-600/25"
-                                }`}
-                            >
-                                <CheckCircle className="w-5 h-5" />
-                                Xác nhận ký hợp đồng
-                            </button>
+                {/* Nút hành động */}
+                <div className="space-y-3">
+                    <button
+                        onClick={handleConfirm}
+                        disabled={otp.join("").length !== 6}
+                        className={`w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2
+                            ${otp.join("").length !== 6
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            : "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-blue-600/25"
+                        }`}
+                    >
+                        <CheckCircle className="w-5 h-5" />
+                        Xác nhận ký hợp đồng
+                    </button>
 
-                            <button
-                                onClick={handleResend}
-                                disabled={resendCountdown > 0}
-                                className={`w-full py-2 text-sm font-medium transition-all flex items-center justify-center gap-1
-                  ${resendCountdown > 0
-                                    ? "text-gray-400 cursor-not-allowed"
-                                    : "text-blue-600 hover:text-blue-700"
-                                }`}
-                            >
-                                <Clock className="w-4 h-4" />
-                                Gửi lại OTP {resendCountdown > 0 ? `(${resendCountdown}s)` : ""}
-                            </button>
-                        </div>
-                    </>
-                )}
+                    <button
+                        onClick={handleResend}
+                        disabled={resendCountdown > 0}
+                        className={`w-full py-2 text-sm font-medium transition-all flex items-center justify-center gap-1
+                            ${resendCountdown > 0
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-blue-600 hover:text-blue-700"
+                        }`}
+                    >
+                        <Clock className="w-4 h-4" />
+                        Gửi lại OTP {resendCountdown > 0 ? `(${resendCountdown}s)` : ""}
+                    </button>
+                </div>
             </div>
 
             {/* Toast */}
