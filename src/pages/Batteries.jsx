@@ -8,7 +8,7 @@ function Batteries() {
     <div className="min-h-screen bg-white">
       <Header />
       <main>
-        <BatteryListing />
+        <BatteryListing showViewAll={false} />
       </main>
       <Footer />
     </div>
@@ -16,4 +16,3 @@ function Batteries() {
 }
 
 export default Batteries;
-

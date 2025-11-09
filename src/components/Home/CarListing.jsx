@@ -93,9 +93,50 @@ const CarListing = ({ limit, showViewAll = false }) => {
     }
   }
 
+  // Hàm xác định thứ tự VIP tier (cao đến thấp)
+  const getVipTierOrder = (vipTier) => {
+    const tierOrder = {
+      diamond: 3,
+      gold: 2,
+      silver: 1,
+    };
+    return vipTier ? tierOrder[vipTier.toLowerCase()] || 0 : 0;
+  };
+
+  // Hàm sắp xếp posts theo VIP tier và thời gian
+  const sortPosts = (posts) => {
+    return posts.sort((a, b) => {
+      // 1. Sắp xếp theo VIP (VIP trước, không VIP sau)
+      const aIsVip = a.isVip ? 1 : 0;
+      const bIsVip = b.isVip ? 1 : 0;
+
+      if (aIsVip !== bIsVip) {
+        return bIsVip - aIsVip; // VIP posts trước
+      }
+
+      // 2. Nếu cả 2 đều VIP, sắp xếp theo tier (Kim Cương > Vàng > Bạc)
+      if (aIsVip && bIsVip) {
+        const aTierOrder = getVipTierOrder(a.vipTier);
+        const bTierOrder = getVipTierOrder(b.vipTier);
+
+        if (aTierOrder !== bTierOrder) {
+          return bTierOrder - aTierOrder; // Tier cao hơn trước
+        }
+      }
+
+      // 3. Nếu cùng VIP tier (hoặc cả 2 không VIP), sắp xếp theo thời gian đăng (mới nhất trước)
+      const aDate = new Date(a.createdAt || a.created_at || 0);
+      const bDate = new Date(b.createdAt || b.created_at || 0);
+      return bDate - aDate; // Bài mới hơn trước
+    });
+  };
+
   async function getAllPosts() {
     try {
-      const res = await api.get("/posts");
+      // Thêm filter params để lấy xe điện đã verify
+      const res = await api.get(
+        "/posts?category=vehicle&verifyStatus=verify&limit=1000"
+      );
       console.log("Full API Response:", res);
       console.log("API Data:", res.data);
 
@@ -104,15 +145,26 @@ const CarListing = ({ limit, showViewAll = false }) => {
         console.log("All posts:", allPosts);
         console.log("Total posts:", allPosts.length);
 
-        // Chỉ lấy các bài có category = "ev" và verifyStatus = "verify"
-        const evPosts = allPosts.filter(
-          (post) =>
-            post.category === "vehicle" && post.verifyStatus === "verify"
-        );
-        console.log("EV posts:", evPosts);
-        console.log("EV posts count:", evPosts.length);
+        // Fallback: Filter ở frontend nếu backend không support query params
+        let evPosts = Array.isArray(allPosts)
+          ? allPosts.filter(
+              (post) =>
+                post.category === "vehicle" && post.verifyStatus === "verify"
+            )
+          : allPosts;
 
-        setPosts(evPosts);
+        // Sắp xếp posts theo VIP tier và thời gian
+        if (Array.isArray(evPosts)) {
+          evPosts = sortPosts(evPosts);
+        }
+
+        console.log("EV posts (sorted):", evPosts);
+        console.log(
+          "EV posts count:",
+          Array.isArray(evPosts) ? evPosts.length : 0
+        );
+
+        setPosts(Array.isArray(evPosts) ? evPosts : []);
       }
     } catch (error) {
       console.error("Error fetching posts:", error);
