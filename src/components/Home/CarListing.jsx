@@ -5,27 +5,47 @@ import Toast from "../Toast";
 import { useNavigate } from "react-router-dom";
 import { Star } from "lucide-react";
 
-const CarListing = () => {
+const CarListing = ({ limit, showViewAll = false }) => {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [msg, setMsg] = useState("");
   const [toast, setToast] = useState(false);
   const [type, setType] = useState("");
 
+  const getVipTierInfo = (vipTier) => {
+    const tiers = {
+      silver: {
+        label: "Bạc",
+        color: "text-gray-700",
+        bg: "bg-gray-100",
+        border: "border-gray-400",
+      },
+      gold: {
+        label: "Vàng",
+        color: "text-yellow-700",
+        bg: "bg-yellow-100",
+        border: "border-yellow-400",
+      },
+      diamond: {
+        label: "Kim Cương",
+        color: "text-cyan-700",
+        bg: "bg-cyan-100",
+        border: "border-cyan-500",
+      },
+    };
+
+    return tiers[vipTier?.toLowerCase()] || tiers.silver;
+  };
+
   const renderVipBadge = (post) => {
     if (!post.isVip || !post.vipTier) return null;
 
-    const tiers = {
-      silver: { label: "VIP Bạc", color: "text-gray-700", bg: "bg-gray-100" },
-      gold: { label: "VIP Vàng", color: "text-yellow-700", bg: "bg-yellow-100" },
-      platinum: { label: "VIP Bạch kim", color: "text-cyan-700", bg: "bg-cyan-100" },
-      diamond: { label: "VIP Kim cương", color: "text-purple-700", bg: "bg-purple-100" }
-    };
-
-    const info = tiers[post.vipTier.toLowerCase()] || tiers.silver;
+    const info = getVipTierInfo(post.vipTier);
 
     return (
-      <div className={`absolute top-4 left-4 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold shadow-md ${info.bg} ${info.color}`}>
+      <div
+        className={`absolute top-4 left-4 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold shadow-md ${info.bg} ${info.color}`}
+      >
         <Star className="w-4 h-4 fill-current" />
         {info.label}
       </div>
@@ -113,6 +133,9 @@ const CarListing = () => {
 
   console.log(posts);
 
+  // Giới hạn số lượng posts hiển thị nếu có limit
+  const displayedPosts = limit ? posts.slice(0, limit) : posts;
+
   return (
     <section className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -136,82 +159,91 @@ const CarListing = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {posts.map((post) => (
-              <div
-                key={post.id}
-                className={`relative bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 ${
-                  post.isVip ? "border-2 border-yellow-400" : ""
-                }`}
-              >
-                {/* Ảnh */}
-                <div className="relative">
-                  <img
-                    src={
-                      post.image && post.image.length > 0
-                        ? post.image[0]
-                        : "https://cdn.thepennyhoarder.com/wp-content/uploads/2022/05/21141022/hybrid-vs-electric-final.jpg"
-                    }
-                    alt={post.title}
-                    className="w-full h-56 object-cover"
-                  />
+            {displayedPosts.map((post) => {
+              const vipInfo = post.isVip ? getVipTierInfo(post.vipTier) : null;
 
-                  {/* Huy hiệu VIP */}
-                  {post.isVip && (
-                    <div className="absolute top-4 left-4 bg-yellow-400 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-md">
-                      {post.vipTier}
+              return (
+                <div
+                  key={post.id}
+                  className={`relative bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 ${
+                    post.isVip ? `border-2 ${vipInfo.border}` : ""
+                  }`}
+                >
+                  {/* Ảnh */}
+                  <div className="relative">
+                    <img
+                      src={
+                        post.image && post.image.length > 0
+                          ? post.image[0]
+                          : "https://cdn.thepennyhoarder.com/wp-content/uploads/2022/05/21141022/hybrid-vs-electric-final.jpg"
+                      }
+                      alt={post.title}
+                      className="w-full h-56 object-cover"
+                    />
+
+                    {/* Huy hiệu VIP */}
+                    {post.isVip && vipInfo && (
+                      <div
+                        className={`absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-semibold shadow-md ${vipInfo.bg} ${vipInfo.color}`}
+                      >
+                        {vipInfo.label}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Nội dung */}
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      {post.title}
+                    </h3>
+                    <p className="text-gray-600 mb-4 line-clamp-2">
+                      {post.content}
+                    </p>
+
+                    <p className="text-gray-600 mb-4 line-clamp-2">
+                      {post.username}
+                    </p>
+
+                    {/* Giá tiền */}
+                    <div className="flex justify-between items-center text-sm mb-4">
+                      <span className="text-gray-600">Giá:</span>
+                      <span className="font-semibold text-green-600 text-lg">
+                        {formatPrice(post.price)}
+                      </span>
                     </div>
-                  )}
-                </div>
 
-                {/* Nội dung */}
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    {post.title}
-                  </h3>
-                  <p className="text-gray-600 mb-4 line-clamp-2">
-                    {post.content}
-                  </p>
-
-                  <p className="text-gray-600 mb-4 line-clamp-2">
-                    {post.username}
-                  </p>
-
-                  {/* Giá tiền */}
-                  <div className="flex justify-between items-center text-sm mb-4">
-                    <span className="text-gray-600">Giá:</span>
-                    <span className="font-semibold text-green-600 text-lg">
-                      {formatPrice(post.price)}
-                    </span>
-                  </div>
-
-                  {/* Nút */}
-                  <div className="flex space-x-3">
-                    <Link
-                      to={`/listing/ev/${post.id}`}
-                      state={{ post }}
-                      className="flex-1"
-                    >
-                      <button className="w-full bg-gray-900 text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors font-medium">
-                        Xem chi tiết
+                    {/* Nút */}
+                    <div className="flex space-x-3">
+                      <Link
+                        to={`/listing/ev/${post.id}`}
+                        state={{ post }}
+                        className="flex-1"
+                      >
+                        <button className="w-full bg-gray-900 text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors font-medium">
+                          Xem chi tiết
+                        </button>
+                      </Link>
+                      <button
+                        onClick={() => handleRequest(post.id)}
+                        className="flex-1 border border-gray-300 text-gray-900 py-2 px-4 rounded-md hover:bg-gray-50 transition-colors font-medium"
+                      >
+                        Gửi yêu cầu
                       </button>
-                    </Link>
-                    <button
-                      onClick={() => handleRequest(post.id)}
-                      className="flex-1 border border-gray-300 text-gray-900 py-2 px-4 rounded-md hover:bg-gray-50 transition-colors font-medium"
-                    >
-                      Gửi yêu cầu
-                    </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
         {/* Nút xem thêm */}
-        {posts.length > 0 && (
+        {posts.length > 0 && showViewAll && (
           <div className="text-center mt-12">
-            <button className="bg-gray-900 text-white px-8 py-3 rounded-md hover:bg-gray-800 transition-colors font-medium">
+            <button
+              onClick={() => navigate("/cars")}
+              className="bg-gray-900 text-white px-8 py-3 rounded-md hover:bg-gray-800 transition-colors font-medium"
+            >
               Xem tất cả xe điện
             </button>
           </div>

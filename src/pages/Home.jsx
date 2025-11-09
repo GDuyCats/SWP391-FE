@@ -13,7 +13,7 @@ function Home() {
       <main>
         <Hero />
         <Features />
-        <CarListing />
+        <CarListing limit={6} showViewAll={true} />
         <News />
       </main>
 
