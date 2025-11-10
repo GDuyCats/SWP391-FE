@@ -11,6 +11,8 @@ const CarListing = ({ limit, showViewAll = false }) => {
   const [msg, setMsg] = useState("");
   const [toast, setToast] = useState(false);
   const [type, setType] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9; // Số sản phẩm mỗi trang (3x3 grid)
 
   const getVipTierInfo = (vipTier) => {
     const tiers = {
@@ -185,8 +187,26 @@ const CarListing = ({ limit, showViewAll = false }) => {
 
   console.log(posts);
 
-  // Giới hạn số lượng posts hiển thị nếu có limit
-  const displayedPosts = limit ? posts.slice(0, limit) : posts;
+  // Logic phân trang
+  const totalPages = limit ? 1 : Math.ceil(posts.length / itemsPerPage);
+
+  // Tính toán posts hiển thị
+  let displayedPosts;
+  if (limit) {
+    // Nếu có limit (trang home), chỉ lấy số lượng limit
+    displayedPosts = posts.slice(0, limit);
+  } else {
+    // Nếu không có limit (trang danh sách), áp dụng phân trang
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    displayedPosts = posts.slice(startIndex, endIndex);
+  }
+
+  // Hàm chuyển trang
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <section className="py-20 bg-gray-50">
@@ -289,7 +309,74 @@ const CarListing = ({ limit, showViewAll = false }) => {
           </div>
         )}
 
-        {/* Nút xem thêm */}
+        {/* Pagination - chỉ hiển thị khi không có limit (trang danh sách đầy đủ) */}
+        {!limit && posts.length > 0 && totalPages > 1 && (
+          <div className="flex justify-center items-center gap-2 mt-12">
+            {/* Nút Previous */}
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                currentPage === 1
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+              }`}
+            >
+              « Trước
+            </button>
+
+            {/* Số trang */}
+            {[...Array(totalPages)].map((_, index) => {
+              const pageNumber = index + 1;
+
+              // Hiển thị: trang đầu, trang cuối, trang hiện tại và 2 trang xung quanh
+              if (
+                pageNumber === 1 ||
+                pageNumber === totalPages ||
+                (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+              ) {
+                return (
+                  <button
+                    key={pageNumber}
+                    onClick={() => handlePageChange(pageNumber)}
+                    className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                      currentPage === pageNumber
+                        ? "bg-gray-900 text-white"
+                        : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                    }`}
+                  >
+                    {pageNumber}
+                  </button>
+                );
+              } else if (
+                pageNumber === currentPage - 2 ||
+                pageNumber === currentPage + 2
+              ) {
+                return (
+                  <span key={pageNumber} className="px-2 text-gray-400">
+                    ...
+                  </span>
+                );
+              }
+              return null;
+            })}
+
+            {/* Nút Next */}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                currentPage === totalPages
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+              }`}
+            >
+              Sau »
+            </button>
+          </div>
+        )}
+
+        {/* Nút xem thêm - chỉ hiển thị ở trang home */}
         {posts.length > 0 && showViewAll && (
           <div className="text-center mt-12">
             <button
