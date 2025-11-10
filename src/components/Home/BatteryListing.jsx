@@ -3,9 +3,8 @@ import { Link } from "react-router-dom";
 import { api } from "../../services/api";
 import Toast from "../Toast";
 import { useNavigate } from "react-router-dom";
-import { Star } from "lucide-react";
 
-const CarListing = ({ limit, showViewAll = false }) => {
+const BatteryListing = ({ limit, showViewAll = false }) => {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [msg, setMsg] = useState("");
@@ -39,27 +38,13 @@ const CarListing = ({ limit, showViewAll = false }) => {
     return tiers[vipTier?.toLowerCase()] || tiers.silver;
   };
 
-  const renderVipBadge = (post) => {
-    if (!post.isVip || !post.vipTier) return null;
-
-    const info = getVipTierInfo(post.vipTier);
-
-    return (
-      <div
-        className={`absolute top-4 left-4 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold shadow-md ${info.bg} ${info.color}`}
-      >
-        <Star className="w-4 h-4 fill-current" />
-        {info.label}
-      </div>
-    );
-  };
-
   async function handleRequest(id) {
     console.log(id);
+
     try {
       const res = await api.post("/PurchaseRequests", {
         postId: id,
-        message: "Tôi muốn mua xe này",
+        message: "Tôi muốn mua pin này",
       });
       console.log(res);
       if (res.status === 201) {
@@ -71,7 +56,7 @@ const CarListing = ({ limit, showViewAll = false }) => {
       console.log(error);
       const status = error?.status;
       const msg = error?.response?.data?.message;
-      let errorMsg = "Không thể yêu cầu mua xe";
+      let errorMsg = "Không thể yêu cầu mua pin";
 
       setToast(true);
       setType("error");
@@ -135,9 +120,9 @@ const CarListing = ({ limit, showViewAll = false }) => {
 
   async function getAllPosts() {
     try {
-      // Thêm filter params để lấy xe điện đã verify
+      // Thêm filter params để lấy pin đã verify
       const res = await api.get(
-        "/posts?category=vehicle&verifyStatus=verify&limit=1000"
+        "/posts?category=battery&verifyStatus=verify&limit=1000"
       );
       console.log("Full API Response:", res);
       console.log("API Data:", res.data);
@@ -145,28 +130,27 @@ const CarListing = ({ limit, showViewAll = false }) => {
       if (res.status === 200 || res.status === 304) {
         const allPosts = res.data.data || res.data;
         console.log("All posts:", allPosts);
-        console.log("Total posts:", allPosts.length);
 
         // Fallback: Filter ở frontend nếu backend không support query params
-        let evPosts = Array.isArray(allPosts)
+        let batteryPosts = Array.isArray(allPosts)
           ? allPosts.filter(
               (post) =>
-                post.category === "vehicle" && post.verifyStatus === "verify"
+                post.category === "battery" && post.verifyStatus === "verify"
             )
           : allPosts;
 
         // Sắp xếp posts theo VIP tier và thời gian
-        if (Array.isArray(evPosts)) {
-          evPosts = sortPosts(evPosts);
+        if (Array.isArray(batteryPosts)) {
+          batteryPosts = sortPosts(batteryPosts);
         }
 
-        console.log("EV posts (sorted):", evPosts);
+        console.log("Battery posts (sorted):", batteryPosts);
         console.log(
-          "EV posts count:",
-          Array.isArray(evPosts) ? evPosts.length : 0
+          "Battery posts count:",
+          Array.isArray(batteryPosts) ? batteryPosts.length : 0
         );
 
-        setPosts(Array.isArray(evPosts) ? evPosts : []);
+        setPosts(Array.isArray(batteryPosts) ? batteryPosts : []);
       }
     } catch (error) {
       console.error("Error fetching posts:", error);
@@ -214,18 +198,18 @@ const CarListing = ({ limit, showViewAll = false }) => {
         {/* Tiêu đề */}
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Xe điện nổi bật
+            Pin xe điện
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Khám phá những chiếc xe điện đã qua sử dụng chất lượng tốt nhất
+            Khám phá các loại pin xe điện chất lượng cao, đã qua kiểm định
           </p>
         </div>
 
-        {/* Danh sách xe */}
+        {/* Danh sách pin */}
         {posts.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg mb-2">
-              Chưa có bài đăng nào được xác thực
+              Chưa có bài đăng pin nào được xác thực
             </p>
             <p className="text-gray-400 text-sm">Vui lòng quay lại sau</p>
           </div>
@@ -247,7 +231,7 @@ const CarListing = ({ limit, showViewAll = false }) => {
                       src={
                         post.image && post.image.length > 0
                           ? post.image[0]
-                          : "https://cdn.thepennyhoarder.com/wp-content/uploads/2022/05/21141022/hybrid-vs-electric-final.jpg"
+                          : "https://afdc.energy.gov/files/u/publication/ev_battery_closeup.jpg"
                       }
                       alt={post.title}
                       className="w-full h-56 object-cover"
@@ -272,8 +256,29 @@ const CarListing = ({ limit, showViewAll = false }) => {
                       {post.content}
                     </p>
 
-                    <p className="text-gray-600 mb-4 line-clamp-2">
-                      {post.username}
+                    {/* Thông tin pin */}
+                    {post.battery_capacity && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                        <span className="font-medium">⚡ Dung lượng:</span>
+                        <span>{post.battery_capacity} kWh</span>
+                      </div>
+                    )}
+                    {post.battery_range && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                        <span className="font-medium">🚗 Quãng đường:</span>
+                        <span>{post.battery_range} km</span>
+                      </div>
+                    )}
+                    {post.battery_condition && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                        <span className="font-medium">✅ Tình trạng:</span>
+                        <span>{post.battery_condition}</span>
+                      </div>
+                    )}
+
+                    <p className="text-gray-600 mb-4 text-sm">
+                      Người đăng:{" "}
+                      <span className="font-semibold">{post.username}</span>
                     </p>
 
                     {/* Giá tiền */}
@@ -287,7 +292,7 @@ const CarListing = ({ limit, showViewAll = false }) => {
                     {/* Nút */}
                     <div className="flex space-x-3">
                       <Link
-                        to={`/listing/ev/${post.id}`}
+                        to={`/listing/battery/${post.id}`}
                         state={{ post }}
                         className="flex-1"
                       >
@@ -380,10 +385,10 @@ const CarListing = ({ limit, showViewAll = false }) => {
         {posts.length > 0 && showViewAll && (
           <div className="text-center mt-12">
             <button
-              onClick={() => navigate("/cars")}
+              onClick={() => navigate("/batteries")}
               className="bg-gray-900 text-white px-8 py-3 rounded-md hover:bg-gray-800 transition-colors font-medium"
             >
-              Xem tất cả xe điện
+              Xem tất cả pin
             </button>
           </div>
         )}
@@ -393,4 +398,4 @@ const CarListing = ({ limit, showViewAll = false }) => {
   );
 };
 
-export default CarListing;
+export default BatteryListing;

@@ -1,4 +1,7 @@
+import { useState } from "react";
+
 function RequestBuyCar() {
+    const [isRequest, setIsRequest] = useState(false)
     return (
         //div lớn nhất
         <div>
@@ -13,7 +16,7 @@ function RequestBuyCar() {
                         Đăng ngày <span className="font-medium text-gray-800">6/10/2025</span> • Xem <span className="font-medium">2</span> lượt
                     </p>
                 </div>
-                <div className="flex mt-10 bg-white shadow-lg rounded-xl overflow-hidden border border-gray-200">
+                <div className="flex mt-2 bg-white shadow-lg rounded-xl overflow-hidden border border-gray-200">
                     {/* Ảnh xe */}
                     <div className="flex-1 flex justify-center items-center bg-gray-50 p-6">
                         <img
@@ -61,22 +64,49 @@ function RequestBuyCar() {
 
             </div>
 
-            <div className="flex items-center justify-between w-full mt-7">
+            <div className="flex items-center justify-between w-full">
 
                 <div className="flex-1 mx-4 h-[4px] bg-gray-400">
                     <div className="flex justify-between mt-6 ml-5">
                         <p className="text-xl text-red-500">Các Điều Khoản và Chính Sách khi mua xe</p>
-                        <button className="bg-black text-white font-semibold px-6 py-2 rounded-full
+                        {isRequest ? (
+                            <div className="max-w-xl bg-white p-6 rounded-2xl shadow-lg space-y-5">
+
+
+                                <h2 className="text-xl font-semibold text-gray-800">
+                                    Bạn nhận được yêu cầu mua xe từ:
+                                </h2>
+
+
+                                <div className="space-y-2 text-gray-700">
+                                    <p><span className="font-medium">Họ tên:</span> Nguyễn Bá Minh Tiến</p>
+                                    <p><span className="font-medium">Số điện thoại:</span> 0123 456 789</p>
+                                    <p><span className="font-medium">CCCD:</span> 123456789012</p>
+                                </div>
+
+
+                                <p className="text-gray-600 leading-relaxed">
+                                    Vui lòng xác nhận yêu cầu. Nhân viên kỹ thuật của chúng tôi sẽ liên hệ và hẹn lịch làm việc với 2 bạn.
+                                </p>
+
+
+                                <button
+                                    className="bg-black text-white font-semibold px-6 py-3 rounded-full
+               hover:bg-gray-800 shadow-md hover:shadow-lg
+               transition-all duration-300 cursor-pointer"
+                                >
+                                    Xác nhận yêu cầu
+                                </button>
+
+                            </div>
+                        ) : (
+                            <button onClick={() => setIsRequest(true)} className="bg-black text-white font-semibold px-6 py-2 rounded-full
                    hover:bg-gray-800 ease-in-out transition-all duration-300 cursor-pointer">
-                            Gửi Yêu Cầu Mua Xe
-                        </button>
-
+                                Gửi Yêu Cầu Mua Xe
+                            </button>
+                        )}
                     </div>
-
                 </div>
-
-
-
             </div>
         </div>
     );

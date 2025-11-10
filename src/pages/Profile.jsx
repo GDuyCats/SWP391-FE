@@ -1,128 +1,172 @@
-import { SquareUserRound } from 'lucide-react';
-import { SquarePen } from 'lucide-react';
-import EditButton from '../components/EditButton';
+import React, { useEffect, useState } from "react";
+import EditButton from "../components/EditButton";
+import { api } from "../services/api";
+import { SquareUserRound } from "lucide-react";
+
 function Profile() {
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [form, setForm] = useState({ email: "", phone: "" });
 
-    return (
-        <div>
-            <div className="bg-[#3da642] py-10 px-5 rounded-3xl w-150 mx-auto">
-                <h1 className="text-2xl text-white text-center font-extrabold">Profile Details</h1>
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+          setError("Bạn chưa đăng nhập.");
+          setLoading(false);
+          return;
+        }
+        // API interceptor đã tự động thêm token vào header
+        // Backend endpoint: POST /profile/me (theo Swagger)
+        const res = await api.post("/profile/me", {});
+        // Xử lý response - backend trả về { user: {...} }
+        const user = res.data?.user || res.data || null;
+        setProfile(user);
+        setForm({ email: user?.email || "", phone: user?.phone || "" });
+      } catch (e) {
+        console.error("Lỗi khi tải profile:", e);
+        const errorMsg =
+          e.response?.data?.message || "Không thể tải thông tin hồ sơ.";
+        setError(errorMsg);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-white">
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">Thông tin cá nhân</h1>
+
+        {loading && <div className="text-gray-600">Đang tải...</div>}
+
+        {!loading && error && <div className="text-red-600">{error}</div>}
+
+        {!loading && !error && profile && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center">
+                <SquareUserRound className="w-16 h-16" />
+                <div className="ml-4">
+                  <p className="text-sm text-gray-500">Tài khoản</p>
+                  <p className="text-lg font-semibold">{profile.username}</p>
+                </div>
+              </div>
+              <EditButton onClick={() => setIsEditing(true)} />
             </div>
-
-            <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between mt-7">
-                    <div>
-                        <p className="font-bold">My Profile</p>
-                        <p className="font-light text-{10px}">You can change your profile details here seamlessly</p>
-                    </div>
-
-
-                    <EditButton />
-
-
-
+            {!isEditing ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Email</p>
+                  <p className="font-medium break-all">
+                    {profile.email || "—"}
+                  </p>
                 </div>
-            </div>
-
-            <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between mt-15 items-center">
-                    <div className="flex items-center">
-                        <SquareUserRound className='w-20 h-20 text-[#3da642]' />
-                        <p className="ml-5">Account Name</p>
-                    </div>
-
-                    <EditButton />
-
+                <div>
+                  <p className="text-sm text-gray-500">Số điện thoại</p>
+                  <p className="font-medium">{profile.phone || "—"}</p>
                 </div>
-
-            </div>
-
-            <div className="max-w-7xl mx-auto">
-                <div className="mt-15">
-                    <p className="font-bold">Personal Information</p>
+                <div>
+                  <p className="text-sm text-gray-500">Trạng thái</p>
+                  <p className="font-medium">
+                    {profile.isVerified ? "Đã xác minh" : "Chưa xác minh"}
+                  </p>
                 </div>
-
-                <div className="flex justify-between">
-                    <div className="mt-8 flex flex-col">
-                        <div className="flex gap-40">
-                            <div>
-                                <p>First Name</p>
-                                <p className="font-thin">Tien</p>
-                            </div>
-
-                            <div>
-                                <p>Last Name</p>
-                                <p className="font-thin">Nguyen Ba Minh</p>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-17.5 mt-8">
-                            <div>
-                                <p>Email Address</p>
-                                <p className="font-thin">nguyentien@gmail.com</p>
-                            </div>
-                            <div>
-                                <p>Phone</p>
-                                <p className="font-thin">0123456789</p>
-                            </div>
-                        </div>
-                        <div>
-                            <p className="mt-8">Bio</p>
-                            <p className="font-thin">Reputation makes the brand</p>
-                        </div>
-
-
-                    </div>
-
-                    <EditButton />
+              </div>
+            ) : (
+              <form
+                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  try {
+                    // API interceptor đã tự động thêm token vào header
+                    // Backend endpoint update (kiểm tra Swagger để xác nhận)
+                    const res = await api.patch("/profile/update", {
+                      email: form.email || null,
+                      phone: form.phone || null,
+                    });
+                    // Cập nhật profile với data từ response hoặc từ form
+                    const updatedUser = res.data?.user || res.data || profile;
+                    setProfile({
+                      ...profile,
+                      email: form.email,
+                      phone: form.phone,
+                      ...updatedUser,
+                    });
+                    setIsEditing(false);
+                  } catch (err) {
+                    console.error("Lỗi khi cập nhật profile:", err);
+                    const errorMsg =
+                      err.response?.data?.message ||
+                      "Cập nhật thất bại. Vui lòng thử lại.";
+                    alert(errorMsg);
+                  }
+                }}
+              >
+                <div>
+                  <label className="block text-sm text-gray-500 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) =>
+                      setForm({ ...form, email: e.target.value })
+                    }
+                    className="w-full border rounded-md px-3 py-2"
+                    placeholder="name@example.com"
+                  />
                 </div>
-
-            </div>
-
-
-            <div className="max-w-7xl mx-auto">
-                <div className="mt-10">
-                    <p className="font-bold">Address</p>
+                <div>
+                  <label className="block text-sm text-gray-500 mb-1">
+                    Số điện thoại
+                  </label>
+                  <input
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) =>
+                      setForm({ ...form, phone: e.target.value })
+                    }
+                    className="w-full border rounded-md px-3 py-2"
+                    placeholder="0123456789"
+                  />
                 </div>
-
-                <div className="flex justify-between">
-                    <div className="mt-8 flex flex-col">
-                        <div className="flex gap-40">
-                            <div>
-                                <p>Region</p>
-                                <p className="font-thin">VietNam</p>
-                            </div>
-
-                            <div>
-                                <p>City</p>
-                                <p className="font-thin">Ho Chi Minh</p>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-17.5 mt-8">
-                            <div>
-                                <p>Posted Code</p>
-                                <p className="font-thin">70000</p>
-                            </div>
-
-                        </div>
-                    </div>
-
-                    <EditButton />
+                <div className="md:col-span-2 flex gap-3 mt-2">
+                  <button
+                    type="submit"
+                    className="bg-gray-900 text-white px-4 py-2 rounded-md"
+                  >
+                    Lưu
+                  </button>
+                  <button
+                    type="button"
+                    className="px-4 py-2 rounded-md border"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setForm({
+                        email: profile.email || "",
+                        phone: profile.phone || "",
+                      });
+                    }}
+                  >
+                    Hủy
+                  </button>
                 </div>
-
-            </div>
-
-
-        </div>
-
-
-    );
-
+              </form>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
 }
 
-export default Profile
-
+export default Profile;
 
 // const MainPage = () => {
 //     return (
@@ -163,4 +207,3 @@ export default Profile
 // }
 
 // export default MainPage
-

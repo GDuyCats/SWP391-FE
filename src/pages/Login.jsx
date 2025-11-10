@@ -1,22 +1,27 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { api } from "../api";              // <— dùng instance
-import InputField from "../components/InputField";
+import { api } from "../services/api"; // <— dùng instance
+import { User, Lock, CheckCircle, XCircle } from "lucide-react";
 
 function Login() {
   const [form, setForm] = useState({ username: "", password: "" });
   const [toast, setToast] = useState(null);
+  const [toastVisible, setToastVisible] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();          // <— bạn đang gọi navigate nhưng chưa khai báo
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { id, value } = e.target;
     setForm((prev) => ({ ...prev, [id]: value }));
   };
 
-  const showToast = (type, msg) => {
+  const showToast = (type, msg, duration = 3000) => {
     setToast({ type, msg });
-    setTimeout(() => setToast(null), 3000);
+    setToastVisible(true);
+    setTimeout(() => {
+      setToastVisible(false);
+      setTimeout(() => setToast(null), 400);
+    }, duration);
   };
 
   useEffect(() => {
@@ -24,21 +29,57 @@ function Login() {
       document.cookie.split("; ").some((c) => c.trim().startsWith(`${name}=1`));
     const clear = (name) => (document.cookie = `${name}=; Max-Age=0; path=/`);
 
-    if (has("justVerified")) { showToast("success", "Your account are verified"); clear("justVerified"); }
-    if (has("verifyExpired")) { showToast("error", "Verification link expired. Please resend a new link."); clear("verifyExpired"); }
-    if (has("verifyInvalid")) { showToast("error", "Invalid verification link."); clear("verifyInvalid"); }
-    if (has("alreadyVerified")) { showToast("success", "Your account is already verified. Please login your account"); clear("alreadyVerified"); }
+    if (has("justVerified")) {
+      showToast("success", "Your account are verified");
+      clear("justVerified");
+    }
+    if (has("verifyExpired")) {
+      showToast(
+        "error",
+        "Verification link expired. Please resend a new link."
+      );
+      clear("verifyExpired");
+    }
+    if (has("verifyInvalid")) {
+      showToast("error", "Invalid verification link.");
+      clear("verifyInvalid");
+    }
+    if (has("alreadyVerified")) {
+      showToast(
+        "success",
+        "Your account is already verified. Please login your account"
+      );
+      clear("alreadyVerified");
+    }
   }, [location.pathname]);
 
   const handleLogin = async () => {
     try {
-      const resp = await api.post("/login", {    // <— gọi đúng baseURL
+      const resp = await api.post("/login", {
+        // <— gọi đúng baseURL
         username: form.username,
-        password: form.password
+        password: form.password,
       });
 
-      showToast("success", "Login success");
-      navigate("/");                              // <— điều hướng sau khi login
+      console.log(resp);
+
+      // Store user data and access token from response
+      if (resp.data.user && resp.data.user.accessToken) {
+        localStorage.setItem("user", JSON.stringify(resp.data.user));
+        localStorage.setItem("accessToken", resp.data.user.accessToken);
+
+        // Dispatch event to notify Header component
+        window.dispatchEvent(new Event("userLogin"));
+      }
+
+      showToast("success", resp.data.message || "Login success");
+      // Redirect based on role: admin -> /admin, others -> /
+      const role = resp?.data?.user?.role;
+      if (role === "admin" || role === "staff") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       const status = err?.response?.status;
       const msg = err?.response?.data?.message;
@@ -51,9 +92,11 @@ function Login() {
         showToast("error", msg || `Login failed (${status})`);
         return;
       }
-      // CORS / network
       if (err?.message?.includes("Network Error")) {
-        showToast("error", "Network/CORS error. Check API URL & CORS settings.");
+        showToast(
+          "error",
+          "Network/CORS error. Check API URL & CORS settings."
+        );
         return;
       }
       showToast("error", msg || "Login failed");
@@ -61,66 +104,120 @@ function Login() {
   };
 
   return (
-    <div className="relative flex flex-col w-screen h-screen justify-center items-center bg-cover bg-center">
-
-      {/* Toast nho nhỏ */}
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      {/* Toast */}
       {toast && (
         <div
-          className={`fixed top-4 right-4 px-4 py-2 rounded shadow text-white ${toast.type === "success" ? "bg-green-600" : "bg-red-600"
-            }`}
+          className={`fixed top-6 right-6 px-5 py-3 rounded-xl shadow-lg text-white flex items-center gap-3
+            transition-all duration-300 transform z-50
+            ${
+              toastVisible
+                ? "translate-x-0 opacity-100"
+                : "translate-x-full opacity-0"
+            }
+            ${toast.type === "success" ? "bg-green-500" : "bg-red-500"}`}
         >
-          {toast.msg}
+          {toast.type === "success" ? (
+            <CheckCircle className="w-5 h-5" />
+          ) : (
+            <XCircle className="w-5 h-5" />
+          )}
+          <span className="font-medium">{toast.msg}</span>
         </div>
       )}
 
-     
+      {/* Main Container */}
+      <div className="w-full max-w-md">
+        {/* Card */}
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          {/* Logo */}
+          <div className="flex justify-center mb-2">
+            <Link
+              to="/"
+              className="w-30 h-30 hover:scale-110 transition-transform duration-300 ease-in-out block"
+            >
+              <img
+                src="/logo.png"
+                alt="LogoWeb"
+                className="w-full h-full object-contain"
+              />
+            </Link>
+          </div>
 
-      <Link
-        to="/"
-        className="w-50 h-50 hover:scale-110 transition-transform duration-300 ease-in-out block"
-      >
-        <img
-          src="/logo.jpg"
-          alt="LogoWeb"
-          className="w-full h-full object-contain"
-        />
-      </Link>
-
-      <div className="flex flex-col w-[500px] h-[600px] shadow-2xl p-[20px]">
-        <h1 className="text-2xl font-semibold mt-[50px] text-black text-center">Login</h1>
-
-        <div className="flex flex-col mt-[60px] space-y-[20px]">
-          <InputField
-            id="username"
-            label="Username"
-            type="text"
-            value={form.username}
-            onChange={handleChange}
-          />
-
-          <InputField
-            id="password"
-            label="Password"
-            type="password"
-            value={form.password}
-            onChange={handleChange}
-          />
-
-          <button
-            type="button"
-            onClick={handleLogin}
-            className="flex mx-auto text-2xl cursor-pointer font-semibold w-[400px] h-[40px] mt-[20px] rounded-full bg-black justify-center items-center hover:scale-110 transition-transform duration-300"
-          >
-            <p className="text-white">Login</p>
-          </button>
-
-          <p className="text-xs mx-auto cursor-pointer hover:scale-110 transition-transform duration-300 text-black">
-            Don't have an account ?
+          {/* Title */}
+          <h1 className="text-2xl font-bold text-gray-800 text-center mb-2">
+            Đăng nhập
+          </h1>
+          <p className="text-gray-500 text-center mb-8">
+            Điền thông tin bên dưới để đăng nhập
           </p>
 
-          <Link to={"/register"} className="mx-auto cursor-pointer hover:underline text-black">
-            Create a new account !
-          </Link>
+          {/* Form */}
+          <div className="space-y-5">
+            {/* Username Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tên người dùng
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  id="username"
+                  type="text"
+                  value={form.username}
+                  onChange={handleChange}
+                  placeholder="Nhập tên người dùng"
+                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl
+                    focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100
+                    transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Password Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Mật khẩu
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  id="password"
+                  type="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="Nhập mật khẩu"
+                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl
+                    focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100
+                    transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Login Button */}
+            <button
+              type="button"
+              onClick={handleLogin}
+              className="w-full py-3 rounded-xl font-semibold text-white
+                bg-blue-500 hover:bg-blue-600 active:scale-95
+                transition-all duration-200"
+            >
+              Đăng nhập
+            </button>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              Chưa có tài khoản?{" "}
+              <Link
+                to="/register"
+                className="text-blue-500 font-semibold hover:underline"
+              >
+                Đăng ký
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
