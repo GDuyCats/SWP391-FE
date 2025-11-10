@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
-import { X, Shield, Clock, CheckCircle } from "lucide-react";
+import { X, Shield, Clock, CheckCircle, Code } from "lucide-react";
 import Toast from "../components/Toast";
 import { api } from "../services/api.js";
 
 export default function ContractOtpDialog({
-                                              open,
-                                              onClose,
-                                              contractId,
-                                          }) {
+    open,
+    onClose,
+    contractId,
+}) {
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const [resendCountdown, setResendCountdown] = useState(0);
     const [toast, setToast] = useState(false);
@@ -15,16 +15,7 @@ export default function ContractOtpDialog({
     const [msg, setMsg] = useState("");
     const inputRefs = useRef([]);
 
-    useEffect(() => {
-        inputRefs.current = inputRefs.current.slice(0, 6);
-    }, []);
 
-    useEffect(() => {
-        if (resendCountdown > 0) {
-            const timer = setTimeout(() => setResendCountdown(resendCountdown - 1), 1000);
-            return () => clearTimeout(timer);
-        }
-    }, [resendCountdown]);
 
     const handleOtpChange = (index, value) => {
         if (!/^\d*$/.test(value)) return;
@@ -53,7 +44,7 @@ export default function ContractOtpDialog({
         }
 
         try {
-            const res = await api.post("/contracts/verify-otp", { otp: otpCode, contractId });
+            const res = await api.post("/contracts/verify-otp", { contractId: contractId, code: otpCode});
 
             if (res.status === 200) {
                 setType("success");
@@ -103,8 +94,19 @@ export default function ContractOtpDialog({
         setTimeout(() => setToast(false), 3000);
 
         // Gọi API gửi lại OTP nếu cần
-        // api.post("/contracts/resend-otp", { contractId });
+        api.post("/contracts/resend-otp", { contractId });
     };
+
+    useEffect(() => {
+        inputRefs.current = inputRefs.current.slice(0, 6);
+    }, []);
+
+    useEffect(() => {
+        if (resendCountdown > 0) {
+            const timer = setTimeout(() => setResendCountdown(resendCountdown - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [resendCountdown]);
 
     useEffect(() => {
         if (open) {
@@ -176,9 +178,9 @@ export default function ContractOtpDialog({
                         disabled={otp.join("").length !== 6}
                         className={`w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2
                             ${otp.join("").length !== 6
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            : "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-blue-600/25"
-                        }`}
+                                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                : "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-blue-600/25"
+                            }`}
                     >
                         <CheckCircle className="w-5 h-5" />
                         Xác nhận ký hợp đồng
@@ -189,9 +191,9 @@ export default function ContractOtpDialog({
                         disabled={resendCountdown > 0}
                         className={`w-full py-2 text-sm font-medium transition-all flex items-center justify-center gap-1
                             ${resendCountdown > 0
-                            ? "text-gray-400 cursor-not-allowed"
-                            : "text-blue-600 hover:text-blue-700"
-                        }`}
+                                ? "text-gray-400 cursor-not-allowed"
+                                : "text-blue-600 hover:text-blue-700"
+                            }`}
                     >
                         <Clock className="w-4 h-4" />
                         Gửi lại OTP {resendCountdown > 0 ? `(${resendCountdown}s)` : ""}

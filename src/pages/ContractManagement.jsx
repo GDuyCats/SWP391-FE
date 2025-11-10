@@ -61,9 +61,7 @@ function ContractManagement() {
         });
     };
 
-    useEffect(() => {
-        getContracts();
-    }, []);
+    
 
     // Mở dialog OTP
     const handleOpenOtp = (contractId) => {
@@ -79,6 +77,16 @@ function ContractManagement() {
         setMsg(`Hợp đồng #${selectedContractId} đã được ký thành công!`);
         setTimeout(() => setToast(false), 3000);
     };
+
+    useEffect(() => {
+        getContracts();
+    }, []);
+
+    useEffect(() => {
+        if (!otpOpen) {
+            getContracts();
+        }
+    },[otpOpen])
 
     return (
         <div className="min-h-screen bg-gray-50 p-6">
