@@ -38,7 +38,7 @@ import LayoutAdmin from "./components/LayoutAdmin";
 import PostManagement from "./pages/PostManagement";
 import RequestManagement from "./components/RequestManagement";
 import ContractManagement from "./pages/ContractManagement.jsx";
-import VIPPlans from "./pages/Admin/VIPPlans";
+import TransactionHistory from "./components/TransactionHistory.jsx";
 function App() {
   return (
     <BrowserRouter>
@@ -56,7 +56,7 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<About />} />
           <Route path="/buy-requests" element={<BuyRequests />} />
-
+          <Route path="/transaction-history" element={<TransactionHistory />} />
           {/* Listing Routes */}
           <Route path="/chooselisting" element={<ChooseListing />} />
           <Route path="/listing/ev" element={<ListingEV />} />
