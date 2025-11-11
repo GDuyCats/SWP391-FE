@@ -1,11 +1,12 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { api } from "../services/api"; // <— dùng instance
-import InputField from "../components/InputField";
+import { User, Lock, CheckCircle, XCircle } from "lucide-react";
 
 function Login() {
   const [form, setForm] = useState({ username: "", password: "" });
   const [toast, setToast] = useState(null);
+  const [toastVisible, setToastVisible] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -14,9 +15,13 @@ function Login() {
     setForm((prev) => ({ ...prev, [id]: value }));
   };
 
-  const showToast = (type, msg) => {
+  const showToast = (type, msg, duration = 3000) => {
     setToast({ type, msg });
-    setTimeout(() => setToast(null), 3000);
+    setToastVisible(true);
+    setTimeout(() => {
+      setToastVisible(false);
+      setTimeout(() => setToast(null), 400);
+    }, duration);
   };
 
   useEffect(() => {
@@ -51,14 +56,12 @@ function Login() {
   const handleLogin = async () => {
     try {
       const resp = await api.post("/login", {
-
         // <— gọi đúng baseURL
         username: form.username,
         password: form.password,
       });
 
       console.log(resp);
-      
 
       // Store user data and access token from response
       if (resp.data.user && resp.data.user.accessToken) {
@@ -72,7 +75,7 @@ function Login() {
       showToast("success", resp.data.message || "Login success");
       // Redirect based on role: admin -> /admin, others -> /
       const role = resp?.data?.user?.role;
-      if (role === "admin" || role ==="staff") {
+      if (role === "admin" || role === "staff") {
         navigate("/admin");
       } else {
         navigate("/");
@@ -101,77 +104,119 @@ function Login() {
   };
 
   return (
-    <div
-      className="relative flex flex-col w-screen h-screen justify-center items-center bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: "url('/BackGroundimg.jpg')" }}
-    >
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       {/* Toast */}
       {toast && (
         <div
-          className={`fixed top-4 right-4 px-4 py-2 rounded shadow text-white ${
-            toast.type === "success" ? "bg-green-600" : "bg-red-600"
-          }`}
+          className={`fixed top-6 right-6 px-5 py-3 rounded-xl shadow-lg text-white flex items-center gap-3
+            transition-all duration-300 transform z-50
+            ${
+              toastVisible
+                ? "translate-x-0 opacity-100"
+                : "translate-x-full opacity-0"
+            }
+            ${toast.type === "success" ? "bg-green-500" : "bg-red-500"}`}
         >
-          {toast.msg}
+          {toast.type === "success" ? (
+            <CheckCircle className="w-5 h-5" />
+          ) : (
+            <XCircle className="w-5 h-5" />
+          )}
+          <span className="font-medium">{toast.msg}</span>
         </div>
       )}
 
-      <Link
-        to="/"
-        className="w-50 h-50 hover:scale-110 transition-transform duration-300 ease-in-out block mb-4"
-      >
-        <img
-          src="/logo.png"
-          alt="LogoWeb"
-          className="w-full h-full object-contain"
-        />
-      </Link>
+      {/* Main Container */}
+      <div className="w-full max-w-md">
+        {/* Card */}
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          {/* Logo */}
+          <div className="flex justify-center mb-2">
+            <Link
+              to="/"
+              className="w-30 h-30 hover:scale-110 transition-transform duration-300 ease-in-out block"
+            >
+              <img
+                src="/logo.png"
+                alt="LogoWeb"
+                className="w-full h-full object-contain"
+              />
+            </Link>
+          </div>
 
-      <div className="flex flex-col w-[500px] h-[600px] shadow-2xl p-[20px] bg-white/5 rounded">
-        <h1 className="text-2xl font-semibold mt-[10px] text-black text-center">
-          Login
-        </h1>
-
-        <div className="flex flex-col w-[460px] h-[420px] shadow p-[20px] mt-6 mx-auto bg-transparent">
-          <h1 className="text-2xl font-semibold text-white text-center">
-            Login
+          {/* Title */}
+          <h1 className="text-2xl font-bold text-gray-800 text-center mb-2">
+            Đăng nhập
           </h1>
+          <p className="text-gray-500 text-center mb-8">
+            Điền thông tin bên dưới để đăng nhập
+          </p>
 
-          <div className="flex flex-col mt-[30px] space-y-[20px]">
-            <InputField
-              id="username"
-              label="Username"
-              type="text"
-              value={form.username}
-              onChange={handleChange}
-            />
+          {/* Form */}
+          <div className="space-y-5">
+            {/* Username Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tên người dùng
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  id="username"
+                  type="text"
+                  value={form.username}
+                  onChange={handleChange}
+                  placeholder="Nhập tên người dùng"
+                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl
+                    focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100
+                    transition-all"
+                />
+              </div>
+            </div>
 
-            <InputField
-              id="password"
-              label="Password"
-              type="password"
-              value={form.password}
-              onChange={handleChange}
-            />
+            {/* Password Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Mật khẩu
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  id="password"
+                  type="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="Nhập mật khẩu"
+                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl
+                    focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100
+                    transition-all"
+                />
+              </div>
+            </div>
 
+            {/* Login Button */}
             <button
               type="button"
               onClick={handleLogin}
-              className="flex mx-auto text-xl cursor-pointer font-semibold w-[400px] h-[40px] mt-[20px] rounded-full bg-[#38d142] justify-center items-center hover:scale-110 transition-transform duration-300"
+              className="w-full py-3 rounded-xl font-semibold text-white
+                bg-blue-500 hover:bg-blue-600 active:scale-95
+                transition-all duration-200"
             >
-              <p className="text-white">Login</p>
+              Đăng nhập
             </button>
+          </div>
 
-            <p className="text-xs mx-auto cursor-pointer hover:scale-110 transition-transform duration-300 text-white">
-              Don't have an account ?
+          {/* Footer */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              Chưa có tài khoản?{" "}
+              <Link
+                to="/register"
+                className="text-blue-500 font-semibold hover:underline"
+              >
+                Đăng ký
+              </Link>
             </p>
-
-            <Link
-              to="/register"
-              className="mx-auto cursor-pointer hover:underline text-white"
-            >
-              Create a new account !
-            </Link>
           </div>
         </div>
       </div>

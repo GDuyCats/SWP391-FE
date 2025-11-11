@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from "react";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
 import EditButton from "../components/EditButton";
 import { api } from "../services/api";
 import { SquareUserRound } from "lucide-react";
@@ -21,18 +19,18 @@ function Profile() {
           setLoading(false);
           return;
         }
-        const res = await api.post(
-          "/profile",
-          {},
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        const user = res.data?.user || null;
+        // API interceptor đã tự động thêm token vào header
+        // Backend endpoint: POST /profile/me (theo Swagger)
+        const res = await api.post("/profile/me", {});
+        // Xử lý response - backend trả về { user: {...} }
+        const user = res.data?.user || res.data || null;
         setProfile(user);
         setForm({ email: user?.email || "", phone: user?.phone || "" });
       } catch (e) {
-        setError("Không thể tải thông tin hồ sơ.");
+        console.error("Lỗi khi tải profile:", e);
+        const errorMsg =
+          e.response?.data?.message || "Không thể tải thông tin hồ sơ.";
+        setError(errorMsg);
       } finally {
         setLoading(false);
       }
@@ -42,7 +40,6 @@ function Profile() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
       <main className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-6">Thông tin cá nhân</h1>
 
@@ -77,7 +74,7 @@ function Profile() {
                 <div>
                   <p className="text-sm text-gray-500">Trạng thái</p>
                   <p className="font-medium">
-                    {profile.isVerify ? "Đã xác minh" : "Chưa xác minh"}
+                    {profile.isVerified ? "Đã xác minh" : "Chưa xác minh"}
                   </p>
                 </div>
               </div>
@@ -87,20 +84,27 @@ function Profile() {
                 onSubmit={async (e) => {
                   e.preventDefault();
                   try {
-                    const token = localStorage.getItem("accessToken");
-                    await api.patch(
-                      "/profile/update",
-                      { email: form.email || null, phone: form.phone || null },
-                      { headers: { Authorization: `Bearer ${token}` } }
-                    );
+                    // API interceptor đã tự động thêm token vào header
+                    // Backend endpoint update (kiểm tra Swagger để xác nhận)
+                    const res = await api.patch("/profile/update", {
+                      email: form.email || null,
+                      phone: form.phone || null,
+                    });
+                    // Cập nhật profile với data từ response hoặc từ form
+                    const updatedUser = res.data?.user || res.data || profile;
                     setProfile({
                       ...profile,
                       email: form.email,
                       phone: form.phone,
+                      ...updatedUser,
                     });
                     setIsEditing(false);
                   } catch (err) {
-                    alert("Cập nhật thất bại. Vui lòng thử lại.");
+                    console.error("Lỗi khi cập nhật profile:", err);
+                    const errorMsg =
+                      err.response?.data?.message ||
+                      "Cập nhật thất bại. Vui lòng thử lại.";
+                    alert(errorMsg);
                   }
                 }}
               >
@@ -158,13 +162,11 @@ function Profile() {
           </div>
         )}
       </main>
-      <Footer />
     </div>
   );
 }
 
 export default Profile;
-
 
 // const MainPage = () => {
 //     return (
@@ -205,4 +207,3 @@ export default Profile;
 // }
 
 // export default MainPage
-
