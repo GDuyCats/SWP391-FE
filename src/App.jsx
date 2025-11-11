@@ -86,6 +86,7 @@ function App() {
           <Route path="/users" element={<Users />} />
           <Route path="/adminapprove" element={<AdminApprove />} />
           <Route path="/request-management" element={<RequestManagement />} />
+          <Route path="/admin/vip-plans" element={<VIPPlans />} />
         </Route>
 
         <Route path="/admin/forbidden" element={<Forbidden />} />
