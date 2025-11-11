@@ -39,6 +39,7 @@ import PostManagement from "./pages/PostManagement";
 import RequestManagement from "./components/RequestManagement";
 import ContractManagement from "./pages/ContractManagement.jsx";
 import TransactionHistory from "./components/TransactionHistory.jsx";
+import VIPPlans from "./pages/Admin/VIPPlans.jsx";
 function App() {
   return (
     <BrowserRouter>
@@ -78,7 +79,6 @@ function App() {
           element={
             <AdminRoute>
               <StaffAssignment />
-
             </AdminRoute>
           }
         />
@@ -97,7 +97,6 @@ function App() {
         <Route path="/paymentfails" element={<PaymentFails />} />
         <Route path="/cars" element={<Cars />} />
         <Route path="/batteries" element={<Batteries />} />
-        
       </Routes>
     </BrowserRouter>
   );
