@@ -13,7 +13,9 @@ function PostManagement() {
     const [toast, setToast] = useState(false);
     const [type, setType] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
+    const [openAlertDialog, setOpenAlertDialog] = useState(false);
     const [selectedPost, setSelectedPost] = useState(null);
+    const [id, setId] = useState(0);
 
     async function getPostsByUser() {
         try {
@@ -121,7 +123,10 @@ function PostManagement() {
                                                 <Eye size={20} />
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(post.id)}
+                                                onClick={() => {
+                                                    setId(post.id)
+                                                    setOpenAlertDialog(true);
+                                                }}
                                                 className="text-red-600 hover:text-red-800 transition-colors cursor-pointer"
                                                 title="Xóa bài đăng"
                                             >
@@ -143,8 +148,8 @@ function PostManagement() {
                 </div>
             </div>
             <AlertDialog
-                open={openDialog}
-                onClose={() => setOpenDialog(false)}
+                open={openAlertDialog}
+                onClose={() => setOpenAlertDialog(false)}
                 handleDelete={() => handleDelete(id)}
             />
             <PostDetailSellerDialog

@@ -123,9 +123,9 @@ function ContractManagement() {
                             <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Giá Trị
                             </th>
-                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Số tiền thực tế
-                            </th>
+                            </th> */}
                             <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Cập Nhật
                             </th>
@@ -144,10 +144,10 @@ function ContractManagement() {
                             </tr>
                         ) : (
                             contracts.map((contract) => {
-                                // Tính số tiền thực tế theo vai trò (side)
-                                const buyerTotal = contract.agreedPrice * (1 + contract.buyerFeePercent / 100);
-                                const sellerTotal = contract.agreedPrice * (1 - contract.sellerFeePercent / 100);
-                                const actualAmount = contract.side === "buyer" ? buyerTotal : sellerTotal;
+                                // // Tính số tiền thực tế theo vai trò (side)
+                                // const buyerTotal = contract.agreedPrice * (1 + contract.buyerFeePercent / 100);
+                                // const sellerTotal = contract.agreedPrice * (1 - contract.sellerFeePercent / 100);
+                                // // const actualAmount = contract.side === "buyer" ? buyerTotal : sellerTotal;
 
                                 return (
                                     <tr key={contract.id} className="hover:bg-gray-50">
@@ -194,7 +194,7 @@ function ContractManagement() {
                                             {formatCurrency(contract.agreedPrice)}
                                         </td>
 
-                                        {/* CỘT SỐ TIỀN THỰC TẾ */}
+                                        {/* CỘT SỐ TIỀN THỰC TẾ
                                         <td
                                             className={`px-6 py-4 align-middle whitespace-nowrap text-sm font-medium font-bold ${
                                                 contract.side === "buyer" ? "text-red-600" : "text-green-600"
@@ -206,7 +206,7 @@ function ContractManagement() {
                                             }
                                         >
                                             {formatCurrency(actualAmount)}
-                                        </td>
+                                        </td> */}
 
                                         <td className="px-6 py-4 align-middle whitespace-nowrap text-sm text-gray- 500">
                                             {formatDateTime(contract.updatedAt)}
