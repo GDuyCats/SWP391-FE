@@ -39,6 +39,7 @@ import PostManagement from "./pages/PostManagement";
 import RequestManagement from "./components/RequestManagement";
 import ContractManagement from "./pages/ContractManagement.jsx";
 import TransactionHistory from "./components/TransactionHistory.jsx";
+import VIPPlans from "./pages/Admin/VIPPlans.jsx";
 function App() {
   return (
     <BrowserRouter>
@@ -86,6 +87,7 @@ function App() {
           <Route path="/users" element={<Users />} />
           <Route path="/adminapprove" element={<AdminApprove />} />
           <Route path="/request-management" element={<RequestManagement />} />
+          <Route path="/admin/vip-plans" element={<VIPPlans />} />
         </Route>
 
         <Route path="/admin/forbidden" element={<Forbidden />} />

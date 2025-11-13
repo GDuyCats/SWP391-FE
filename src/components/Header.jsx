@@ -115,7 +115,7 @@ const Header = () => {
               )}
             </div>
 
-            <NavLink
+            {/* <NavLink
               to="/news"
               className={({ isActive }) =>
                 `px-1.5 py-2 text-sm font-medium transition-colors ${
@@ -126,7 +126,7 @@ const Header = () => {
               }
             >
               Tin tức
-            </NavLink>
+            </NavLink> */}
             <NavLink
               to="/about"
               className={({ isActive }) =>
