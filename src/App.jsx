@@ -38,7 +38,8 @@ import LayoutAdmin from "./components/LayoutAdmin";
 import PostManagement from "./pages/PostManagement";
 import RequestManagement from "./components/RequestManagement";
 import ContractManagement from "./pages/ContractManagement.jsx";
-import VIPPlans from "./pages/Admin/VIPPlans";
+import TransactionHistory from "./components/TransactionHistory.jsx";
+import VIPPlans from "./pages/Admin/VIPPlans.jsx";
 function App() {
   return (
     <BrowserRouter>
@@ -56,7 +57,7 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<About />} />
           <Route path="/buy-requests" element={<BuyRequests />} />
-
+          <Route path="/transaction-history" element={<TransactionHistory />} />
           {/* Listing Routes */}
           <Route path="/chooselisting" element={<ChooseListing />} />
           <Route path="/listing/ev" element={<ListingEV />} />
@@ -78,7 +79,6 @@ function App() {
           element={
             <AdminRoute>
               <StaffAssignment />
-
             </AdminRoute>
           }
         />
@@ -97,7 +97,6 @@ function App() {
         <Route path="/paymentfails" element={<PaymentFails />} />
         <Route path="/cars" element={<Cars />} />
         <Route path="/batteries" element={<Batteries />} />
-        
       </Routes>
     </BrowserRouter>
   );

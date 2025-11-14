@@ -1,10 +1,18 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Mail, User, Lock, CheckCircle, XCircle } from 'lucide-react';
+import { useState, useEffect } from "react";
+import {
+  ArrowLeft,
+  Mail,
+  User,
+  Lock,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
+import { api } from "../services/api";
 
 const COOLDOWN_SEC = 60;
 
 function Register() {
-  const [form, setForm] = useState({ email: '', username: '', password: '' });
+  const [form, setForm] = useState({ email: "", username: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
@@ -33,45 +41,56 @@ function Register() {
 
   const handleRegisterOrResend = async () => {
     if (cooldownLeft > 0) {
-      showToast('error', `Vui lòng đợi ${cooldownLeft}s`);
+      showToast("error", `Vui lòng đợi ${cooldownLeft}s`);
       return;
     }
 
     try {
       setLoading(true);
-      
+
       if (!hasActiveVerifyToken) {
         // Đăng ký lần đầu
-        // const resp = await api.post("/register", form);
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
+        const resp = await api.post("/register", form);
+
         setHasActiveVerifyToken(true);
-        showToast('success', 'Vui lòng xác thực tài khoản qua email của bạn.');
+        showToast("success", "Vui lòng xác thực tài khoản qua email của bạn.");
         setCooldownLeft(COOLDOWN_SEC);
       } else {
         // Resend verification
-        // const resp = await api.post("/resend-verify", { email: form.email });
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        showToast('success', 'Email xác thực đã được gửi lại. Vui lòng kiểm tra hộp thư.');
+        const resp = await api.post("/resend-verify", { email: form.email });
+
+        showToast(
+          "success",
+          "Email xác thực đã được gửi lại. Vui lòng kiểm tra hộp thư."
+        );
         setCooldownLeft(COOLDOWN_SEC);
       }
     } catch (error) {
       const status = error?.response?.status;
       const msg = error?.response?.data?.message;
 
-      if (status === 400 && msg === 'Email is already verified') {
-        showToast('success', 'Tài khoản của bạn đã được xác thực. Vui lòng đăng nhập.');
-      } else if (status === 400 && msg?.startsWith?.('Missing required field')) {
-        showToast('error', msg);
+      if (status === 400 && msg === "Email is already verified") {
+        showToast(
+          "success",
+          "Tài khoản của bạn đã được xác thực. Vui lòng đăng nhập."
+        );
+      } else if (
+        status === 400 &&
+        msg?.startsWith?.("Missing required field")
+      ) {
+        showToast("error", msg);
       } else if (status === 409) {
-        showToast('error', 'Email đã tồn tại');
+        showToast("error", "Email đã tồn tại");
       } else if (status === 429) {
-        showToast('error', msg || 'Vui lòng đợi trước khi yêu cầu email khác.');
-      } else if (error?.message?.includes?.('Network Error')) {
-        showToast('error', 'Lỗi mạng. Vui lòng kiểm tra kết nối.');
+        showToast("error", msg || "Vui lòng đợi trước khi yêu cầu email khác.");
+      } else if (error?.message?.includes?.("Network Error")) {
+        showToast("error", "Lỗi mạng. Vui lòng kiểm tra kết nối.");
       } else {
-        showToast('error', msg || (hasActiveVerifyToken ? 'Gửi lại thất bại' : 'Đăng ký thất bại'));
+        showToast(
+          "error",
+          msg ||
+            (hasActiveVerifyToken ? "Gửi lại thất bại" : "Đăng ký thất bại")
+        );
       }
     } finally {
       setLoading(false);
@@ -87,10 +106,14 @@ function Register() {
         <div
           className={`fixed top-6 right-6 px-5 py-3 rounded-xl shadow-lg text-white flex items-center gap-3
             transition-all duration-300 transform z-50
-            ${toastVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
-            ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}
+            ${
+              toastVisible
+                ? "translate-x-0 opacity-100"
+                : "translate-x-full opacity-0"
+            }
+            ${toast.type === "success" ? "bg-green-500" : "bg-red-500"}`}
         >
-          {toast.type === 'success' ? (
+          {toast.type === "success" ? (
             <CheckCircle className="w-5 h-5" />
           ) : (
             <XCircle className="w-5 h-5" />
@@ -102,7 +125,7 @@ function Register() {
       {/* Main Container */}
       <div className="w-full max-w-md">
         {/* Back Button */}
-        <a 
+        <a
           href="/login"
           className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
         >
@@ -203,26 +226,30 @@ function Register() {
               disabled={isDisabled}
               className={`w-full py-3 rounded-xl font-semibold text-white
                 transition-all duration-200
-                ${isDisabled 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-blue-500 hover:bg-blue-600 active:scale-95'
+                ${
+                  isDisabled
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-blue-500 hover:bg-blue-600 active:scale-95"
                 }`}
             >
               {loading
-                ? 'Đang xử lý...'
+                ? "Đang xử lý..."
                 : cooldownLeft > 0
-                  ? `Gửi lại sau ${cooldownLeft}s`
-                  : hasActiveVerifyToken 
-                    ? 'Gửi lại email xác thực' 
-                    : 'Tiếp tục'}
+                ? `Gửi lại sau ${cooldownLeft}s`
+                : hasActiveVerifyToken
+                ? "Gửi lại email xác thực"
+                : "Tiếp tục"}
             </button>
           </div>
 
           {/* Footer */}
           <div className="mt-6 text-center">
             <p className="text-gray-600">
-              Đã có tài khoản?{' '}
-              <a href="/login" className="text-blue-500 font-semibold hover:underline">
+              Đã có tài khoản?{" "}
+              <a
+                href="/login"
+                className="text-blue-500 font-semibold hover:underline"
+              >
                 Đăng nhập
               </a>
             </p>

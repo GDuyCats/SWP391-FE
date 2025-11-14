@@ -13,7 +13,9 @@ function PostManagement() {
     const [toast, setToast] = useState(false);
     const [type, setType] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
+    const [openAlertDialog, setOpenAlertDialog] = useState(false);
     const [selectedPost, setSelectedPost] = useState(null);
+    const [id, setId] = useState(0);
 
     async function getPostsByUser() {
         try {
@@ -21,7 +23,8 @@ function PostManagement() {
             console.log(res);
 
             if (res.status === 200) {
-                setPosts(res.data.data);
+                const verifiedPosts = res.data.data.filter(post => post.verifyStatus === "verify");
+                setPosts(verifiedPosts);
                 setToast(true);
                 setType("success");
                 setMsg("Lấy danh sách bài đăng thành công");
@@ -93,58 +96,60 @@ function PostManagement() {
                             </tr>
                         </thead>
                         <tbody>
-                        {posts.length > 0 ? (
-                            posts.map((post, index) => (
-                                <tr
-                                    key={post.id}
-                                    className={`hover:bg-blue-50 transition-colors ${
-                                        index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                                    }`}
-                                >
-                                    <td className="border-b px-4 py-3">{post.id}</td>
-                                    <td className="border-b px-4 py-3 font-medium text-gray-900">
-                                        {post.title}
-                                    </td>
-                                    <td className="border-b px-4 py-3 text-gray-700">
-                                        {post.content}
-                                    </td>
-                                    <td className="border-b px-4 py-3 text-center">
-                                        <div className="flex justify-center gap-3">
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedPost(post.id);
-                                                    setOpenDialog(true);
-                                                }}
-                                                className="text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
-                                                title="Xem chi tiết"
-                                            >
-                                                <Eye size={20} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(post.id)}
-                                                className="text-red-600 hover:text-red-800 transition-colors cursor-pointer"
-                                                title="Xóa bài đăng"
-                                            >
-                                                <Trash2 size={20} />
-                                            </button>
-                                        </div>
+                            {posts.length > 0 ? (
+                                posts.map((post, index) => (
+                                    <tr
+                                        key={post.id}
+                                        className={`hover:bg-blue-50 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                            }`}
+                                    >
+                                        <td className="border-b px-4 py-3">{post.id}</td>
+                                        <td className="border-b px-4 py-3 font-medium text-gray-900">
+                                            {post.title}
+                                        </td>
+                                        <td className="border-b px-4 py-3 text-gray-700">
+                                            {post.content}
+                                        </td>
+                                        <td className="border-b px-4 py-3 text-center">
+                                            <div className="flex justify-center gap-3">
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedPost(post.id);
+                                                        setOpenDialog(true);
+                                                    }}
+                                                    className="text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
+                                                    title="Xem chi tiết"
+                                                >
+                                                    <Eye size={20} />
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setId(post.id)
+                                                        setOpenAlertDialog(true);
+                                                    }}
+                                                    className="text-red-600 hover:text-red-800 transition-colors cursor-pointer"
+                                                    title="Xóa bài đăng"
+                                                >
+                                                    <Trash2 size={20} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="4" className="text-center py-6 text-gray-500 italic">
+                                        Không có bài đăng nào.
                                     </td>
                                 </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan="4" className="text-center py-6 text-gray-500 italic">
-                                    Không có bài đăng nào.
-                                </td>
-                            </tr>
-                        )}
+                            )}
                         </tbody>
                     </table>
                 </div>
             </div>
             <AlertDialog
-                open={openDialog}
-                onClose={() => setOpenDialog(false)}
+                open={openAlertDialog}
+                onClose={() => setOpenAlertDialog(false)}
                 handleDelete={() => handleDelete(id)}
             />
             <PostDetailSellerDialog
