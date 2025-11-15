@@ -13,7 +13,7 @@ const CarListing = ({ limit, showViewAll = false }) => {
   const [type, setType] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9; // Số sản phẩm mỗi trang (3x3 grid)
-  
+
   // Search states
   const [searchTerm, setSearchTerm] = useState("");
   const [priceRange, setPriceRange] = useState("");
@@ -154,10 +154,32 @@ const CarListing = ({ limit, showViewAll = false }) => {
 
         // Fallback: Filter ở frontend nếu backend không support query params
         let evPosts = Array.isArray(allPosts)
-          ? allPosts.filter(
-              (post) =>
-                post.category === "vehicle" && post.verifyStatus === "verify"
-            )
+          ? allPosts.filter((post) => {
+              // Kiểm tra category và verifyStatus
+              const isValidPost =
+                post.category === "vehicle" && post.verifyStatus === "verify";
+
+              // Kiểm tra VIP expiry - ẩn bài nếu VIP đã hết hạn
+              const now = new Date();
+              let isVipValid = true;
+
+              // Kiểm tra cả vipExpireAt và vipExpiresAt (API có thể dùng tên khác nhau)
+              if (post.isVip && (post.vipExpireAt || post.vipExpiresAt)) {
+                const vipExpireDate = new Date(
+                  post.vipExpireAt || post.vipExpiresAt
+                );
+                isVipValid = vipExpireDate > now; // Chỉ hiển thị nếu chưa hết hạn
+
+                // Debug log
+                if (!isVipValid) {
+                  console.log(
+                    `Bài VIP đã hết hạn - ID: ${post.id}, Expire: ${vipExpireDate}, Now: ${now}`
+                  );
+                }
+              }
+
+              return isValidPost && isVipValid;
+            })
           : allPosts;
 
         // Sắp xếp posts theo VIP tier và thời gian
@@ -362,7 +384,9 @@ const CarListing = ({ limit, showViewAll = false }) => {
             <p className="text-gray-500 text-lg mb-2">
               Không tìm thấy xe điện nào phù hợp
             </p>
-            <p className="text-gray-400 text-sm">Vui lòng thử lại với bộ lọc khác</p>
+            <p className="text-gray-400 text-sm">
+              Vui lòng thử lại với bộ lọc khác
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
