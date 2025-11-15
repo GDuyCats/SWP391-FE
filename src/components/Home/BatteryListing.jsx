@@ -12,6 +12,11 @@ const BatteryListing = ({ limit, showViewAll = false }) => {
   const [type, setType] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9; // Số sản phẩm mỗi trang (3x3 grid)
+  
+  // Search states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [priceRange, setPriceRange] = useState("");
+  const [capacityRange, setCapacityRange] = useState("");
 
   const getVipTierInfo = (vipTier) => {
     const tiers = {
@@ -134,8 +139,27 @@ const BatteryListing = ({ limit, showViewAll = false }) => {
         // Fallback: Filter ở frontend nếu backend không support query params
         let batteryPosts = Array.isArray(allPosts)
           ? allPosts.filter(
-              (post) =>
-                post.category === "battery" && post.verifyStatus === "verify"
+              (post) => {
+                // Kiểm tra category và verifyStatus
+                const isValidPost = post.category === "battery" && post.verifyStatus === "verify";
+                
+                // Kiểm tra VIP expiry - ẩn bài nếu VIP đã hết hạn
+                const now = new Date();
+                let isVipValid = true;
+                
+                // Kiểm tra cả vipExpireAt và vipExpiresAt (API có thể dùng tên khác nhau)
+                if (post.isVip && (post.vipExpireAt || post.vipExpiresAt)) {
+                  const vipExpireDate = new Date(post.vipExpireAt || post.vipExpiresAt);
+                  isVipValid = vipExpireDate > now; // Chỉ hiển thị nếu chưa hết hạn
+                  
+                  // Debug log
+                  if (!isVipValid) {
+                    console.log(`Bài VIP đã hết hạn - ID: ${post.id}, Expire: ${vipExpireDate}, Now: ${now}`);
+                  }
+                }
+                
+                return isValidPost && isVipValid;
+              }
             )
           : allPosts;
 
@@ -169,21 +193,91 @@ const BatteryListing = ({ limit, showViewAll = false }) => {
     });
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
   console.log(posts);
 
+  // Filter posts based on search criteria
+  const filteredPosts = posts.filter((post) => {
+    // Search term filter
+    const matchesSearch = searchTerm
+      ? post.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.content?.toLowerCase().includes(searchTerm.toLowerCase())
+      : true;
+
+    // Price range filter
+    let matchesPrice = true;
+    if (priceRange) {
+      const price = Number(post.price);
+      switch (priceRange) {
+        case "0-50":
+          matchesPrice = price < 50000000;
+          break;
+        case "50-100":
+          matchesPrice = price >= 50000000 && price < 100000000;
+          break;
+        case "100-200":
+          matchesPrice = price >= 100000000 && price < 200000000;
+          break;
+        case "200+":
+          matchesPrice = price >= 200000000;
+          break;
+        default:
+          matchesPrice = true;
+      }
+    }
+
+    // Capacity filter
+    let matchesCapacity = true;
+    if (capacityRange && post.battery_capacity) {
+      const capacity = Number(post.battery_capacity);
+      switch (capacityRange) {
+        case "0-50":
+          matchesCapacity = capacity < 50;
+          break;
+        case "50-75":
+          matchesCapacity = capacity >= 50 && capacity < 75;
+          break;
+        case "75-100":
+          matchesCapacity = capacity >= 75 && capacity < 100;
+          break;
+        case "100+":
+          matchesCapacity = capacity >= 100;
+          break;
+        default:
+          matchesCapacity = true;
+      }
+    }
+
+    return matchesSearch && matchesPrice && matchesCapacity;
+  });
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, priceRange, capacityRange]);
+
   // Logic phân trang
-  const totalPages = limit ? 1 : Math.ceil(posts.length / itemsPerPage);
+  const totalPages = limit ? 1 : Math.ceil(filteredPosts.length / itemsPerPage);
 
   // Tính toán posts hiển thị
   let displayedPosts;
   if (limit) {
     // Nếu có limit (trang home), chỉ lấy số lượng limit
-    displayedPosts = posts.slice(0, limit);
+    displayedPosts = filteredPosts.slice(0, limit);
   } else {
     // Nếu không có limit (trang danh sách), áp dụng phân trang
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    displayedPosts = posts.slice(startIndex, endIndex);
+    displayedPosts = filteredPosts.slice(startIndex, endIndex);
   }
 
   // Hàm chuyển trang
@@ -205,6 +299,72 @@ const BatteryListing = ({ limit, showViewAll = false }) => {
           </p>
         </div>
 
+        {/* Search Bar - chỉ hiển thị khi không có limit (trang danh sách đầy đủ) */}
+        {!limit && (
+          <div className="max-w-5xl mx-auto mb-12">
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tìm kiếm
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Nhập tên pin, loại pin..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Giá từ
+                  </label>
+                  <select
+                    value={priceRange}
+                    onChange={(e) => setPriceRange(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  >
+                    <option value="">Chọn mức giá</option>
+                    <option value="0-50">Dưới 50 triệu</option>
+                    <option value="50-100">50 - 100 triệu</option>
+                    <option value="100-200">100 - 200 triệu</option>
+                    <option value="200+">Trên 200 triệu</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Dung lượng (kWh)
+                  </label>
+                  <select
+                    value={capacityRange}
+                    onChange={(e) => setCapacityRange(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  >
+                    <option value="">Tất cả dung lượng</option>
+                    <option value="0-50">Dưới 50 kWh</option>
+                    <option value="50-75">50 - 75 kWh</option>
+                    <option value="75-100">75 - 100 kWh</option>
+                    <option value="100+">Trên 100 kWh</option>
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setPriceRange("");
+                      setCapacityRange("");
+                    }}
+                    className="w-full bg-gray-200 text-gray-700 py-3 px-6 rounded-md hover:bg-gray-300 transition-colors font-medium"
+                  >
+                    Xóa bộ lọc
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Danh sách pin */}
         {posts.length === 0 ? (
           <div className="text-center py-12">
@@ -212,6 +372,13 @@ const BatteryListing = ({ limit, showViewAll = false }) => {
               Chưa có bài đăng pin nào được xác thực
             </p>
             <p className="text-gray-400 text-sm">Vui lòng quay lại sau</p>
+          </div>
+        ) : displayedPosts.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg mb-2">
+              Không tìm thấy pin nào phù hợp
+            </p>
+            <p className="text-gray-400 text-sm">Vui lòng thử lại với bộ lọc khác</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -276,10 +443,17 @@ const BatteryListing = ({ limit, showViewAll = false }) => {
                       </div>
                     )}
 
-                    <p className="text-gray-600 mb-4 text-sm">
+                    <p className="text-gray-600 mb-2 text-sm">
                       Người đăng:{" "}
                       <span className="font-semibold">{post.username}</span>
                     </p>
+
+                    {/* Ngày đăng */}
+                    {post.createdAt && (
+                      <p className="text-gray-500 text-sm mb-4">
+                        📅 Ngày đăng: {formatDate(post.createdAt)}
+                      </p>
+                    )}
 
                     {/* Giá tiền */}
                     <div className="flex justify-between items-center text-sm mb-4">
@@ -315,7 +489,7 @@ const BatteryListing = ({ limit, showViewAll = false }) => {
         )}
 
         {/* Pagination - chỉ hiển thị khi không có limit (trang danh sách đầy đủ) */}
-        {!limit && posts.length > 0 && totalPages > 1 && (
+        {!limit && filteredPosts.length > 0 && totalPages > 1 && (
           <div className="flex justify-center items-center gap-2 mt-12">
             {/* Nút Previous */}
             <button
