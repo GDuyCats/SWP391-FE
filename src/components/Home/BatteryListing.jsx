@@ -139,8 +139,27 @@ const BatteryListing = ({ limit, showViewAll = false }) => {
         // Fallback: Filter ở frontend nếu backend không support query params
         let batteryPosts = Array.isArray(allPosts)
           ? allPosts.filter(
-              (post) =>
-                post.category === "battery" && post.verifyStatus === "verify"
+              (post) => {
+                // Kiểm tra category và verifyStatus
+                const isValidPost = post.category === "battery" && post.verifyStatus === "verify";
+                
+                // Kiểm tra VIP expiry - ẩn bài nếu VIP đã hết hạn
+                const now = new Date();
+                let isVipValid = true;
+                
+                // Kiểm tra cả vipExpireAt và vipExpiresAt (API có thể dùng tên khác nhau)
+                if (post.isVip && (post.vipExpireAt || post.vipExpiresAt)) {
+                  const vipExpireDate = new Date(post.vipExpireAt || post.vipExpiresAt);
+                  isVipValid = vipExpireDate > now; // Chỉ hiển thị nếu chưa hết hạn
+                  
+                  // Debug log
+                  if (!isVipValid) {
+                    console.log(`Bài VIP đã hết hạn - ID: ${post.id}, Expire: ${vipExpireDate}, Now: ${now}`);
+                  }
+                }
+                
+                return isValidPost && isVipValid;
+              }
             )
           : allPosts;
 
