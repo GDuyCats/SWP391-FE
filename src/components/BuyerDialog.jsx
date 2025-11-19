@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
-import { X, ClipboardList, Calendar, User, CheckCircle } from "lucide-react";
+import { X, ClipboardList, Calendar, User, CheckCircle, History } from "lucide-react";
 import Toast from "./Toast";
 
 function BuyerDialog({ open, onClose, postId }) {
@@ -27,7 +27,7 @@ function BuyerDialog({ open, onClose, postId }) {
 
   async function acceptRequest(id) {
     console.log(id);
-    
+
     try {
       const res = await api.patch(`/PurchaseRequests/${id}/accept`);
       console.log(res);
@@ -129,15 +129,28 @@ function BuyerDialog({ open, onClose, postId }) {
                       <Calendar className="inline w-4 h-4 mr-1 text-gray-400" />
                       {new Date(r.createdAt).toLocaleString("vi-VN")}
                     </td>
-                    <td className="px-4 py-2 text-center">
-                      <button
-                        onClick={() => acceptRequest(r.id)}
-                        className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full hover:bg-green-200 text-sm font-medium transition"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                        Chấp nhận
-                      </button>
-                    </td>
+                    {r.status !== "accepted" ? (
+                      <td className="px-4 py-2 text-center">
+                        <button
+                          onClick={() => acceptRequest(r.id)}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full hover:bg-green-200 text-sm font-medium transition"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          Chấp nhận
+                        </button>
+                      </td>
+                    ):(
+                      <td className="px-4 py-2 text-center">
+                        <button
+                          onClick={() => acceptRequest(r.id)}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full hover:bg-red-200 text-sm font-medium transition"
+                        >
+                          <History className="w-4 h-4" />
+                          
+                        </button>
+                      </td>
+                    )}
+
                   </tr>
                 ))}
               </tbody>
