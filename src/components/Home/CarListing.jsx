@@ -157,7 +157,7 @@ const CarListing = ({ limit, showViewAll = false }) => {
           ? allPosts.filter((post) => {
               // Kiểm tra category và verifyStatus
               const isValidPost =
-                post.category === "vehicle" && post.verifyStatus === "verify";
+                post.category === "vehicle" && post.verifyStatus === "verify" && post.saleStatus === "available";
 
               // Kiểm tra VIP expiry - ẩn bài nếu VIP đã hết hạn
               const now = new Date();
