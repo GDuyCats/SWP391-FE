@@ -3,6 +3,16 @@ import { ArrowLeft, Upload, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 import Toast from "./Toast";
+import FormInput from "./FormInput";
+import {
+  validateRequired,
+  validatePhone,
+  validateYear,
+  validatePrice,
+  validateNumber,
+  validateTextLength,
+  validateForm,
+} from "../utils/validation";
 
 export default function EVForm() {
   const navigate = useNavigate();
@@ -11,6 +21,7 @@ export default function EVForm() {
   const [imagesPreview, setImagesPreview] = useState([]);
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
     title: "",
@@ -52,6 +63,11 @@ export default function EVForm() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleContinue = async (e) => {
@@ -65,6 +81,44 @@ export default function EVForm() {
         type: "error",
       });
       setLoading(false);
+      return;
+    }
+
+    // Validate form
+    const validations = {
+      title: validateTextLength(formData.title, "Tiêu đề bài đăng", { min: 5, max: 200 }),
+      phone: validatePhone(formData.phone),
+      brand: validateRequired(formData.brand, "Hãng xe"),
+      model: validateRequired(formData.model, "Dòng xe"),
+      year: validateYear(formData.year),
+      condition: validateRequired(formData.condition, "Tình trạng"),
+      price: validatePrice(formData.price),
+      content: validateTextLength(formData.content, "Mô tả chi tiết", { min: 20, max: 5000 }),
+    };
+
+    // If hasBattery is checked, validate battery fields
+    if (formData.hasBattery) {
+      validations.battery_brand = validateRequired(formData.battery_brand, "Thương hiệu pin");
+      validations.battery_model = validateRequired(formData.battery_model, "Model pin");
+      validations.battery_capacity = validateRequired(formData.battery_capacity, "Dung lượng pin");
+    }
+
+    const validation = validateForm(validations);
+    if (!validation.isValid) {
+      setErrors(validation.errors);
+      setToast({
+        msg: "Vui lòng kiểm tra lại các trường thông tin",
+        type: "error",
+      });
+      setLoading(false);
+      
+      // Scroll to first error
+      const firstErrorField = Object.keys(validation.errors)[0];
+      const element = document.getElementsByName(firstErrorField)[0];
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        element.focus();
+      }
       return;
     }
 
@@ -161,66 +215,66 @@ export default function EVForm() {
               Thông tin cơ bản
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <input
+              <FormInput
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
                 type="text"
                 placeholder="Tiêu đề bài đăng *"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                error={errors.title}
                 required
               />
-              <input
+              <FormInput
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
                 type="text"
                 placeholder="Số điện thoại liên hệ *"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                error={errors.phone}
                 required
               />
-              <input
+              <FormInput
                 name="brand"
                 value={formData.brand}
                 onChange={handleChange}
                 type="text"
                 placeholder="Hãng xe *"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                error={errors.brand}
                 required
               />
-              <input
+              <FormInput
                 name="model"
                 value={formData.model}
                 onChange={handleChange}
                 type="text"
                 placeholder="Dòng xe *"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                error={errors.model}
                 required
               />
-              <input
+              <FormInput
                 name="year"
                 value={formData.year}
                 onChange={handleChange}
-                type="text"
+                type="number"
                 placeholder="Năm sản xuất *"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                error={errors.year}
                 required
               />
-              <input
+              <FormInput
                 name="mileage"
                 value={formData.mileage}
                 onChange={handleChange}
-                type="text"
+                type="number"
                 placeholder="Số km đã đi"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                error={errors.mileage}
               />
-              <input
+              <FormInput
                 name="condition"
                 value={formData.condition}
                 onChange={handleChange}
                 type="text"
                 placeholder="Tình trạng (Mới/Đã qua sử dụng) *"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                error={errors.condition}
                 required
               />
             </div>
@@ -244,72 +298,72 @@ export default function EVForm() {
 
             {formData.hasBattery && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <input
+                <FormInput
                   name="battery_brand"
                   value={formData.battery_brand}
                   onChange={handleChange}
                   type="text"
                   placeholder="Thương hiệu pin *"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                  error={errors.battery_brand}
                   required
                 />
-                <input
+                <FormInput
                   name="battery_model"
                   value={formData.battery_model}
                   onChange={handleChange}
                   type="text"
                   placeholder="Model pin *"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                  error={errors.battery_model}
                   required
                 />
-                <input
+                <FormInput
                   name="battery_capacity"
                   value={formData.battery_capacity}
                   onChange={handleChange}
                   type="text"
                   placeholder="Dung lượng pin *"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                  error={errors.battery_capacity}
                   required
                 />
-                <input
+                <FormInput
                   name="battery_type"
                   value={formData.battery_type}
                   onChange={handleChange}
                   type="text"
                   placeholder="Loại pin"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                  error={errors.battery_type}
                 />
-                <input
+                <FormInput
                   name="battery_range"
                   value={formData.battery_range}
                   onChange={handleChange}
                   type="text"
                   placeholder="Tầm hoạt động"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                  error={errors.battery_range}
                 />
-                <input
+                <FormInput
                   name="battery_condition"
                   value={formData.battery_condition}
                   onChange={handleChange}
                   type="text"
                   placeholder="Tình trạng pin"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                  error={errors.battery_condition}
                 />
-                <input
+                <FormInput
                   name="charging_time"
                   value={formData.charging_time}
                   onChange={handleChange}
                   type="text"
                   placeholder="Thời gian sạc"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                  error={errors.charging_time}
                 />
-                <input
+                <FormInput
                   name="compatible_models"
                   value={formData.compatible_models}
                   onChange={handleChange}
                   type="text"
                   placeholder="Các dòng xe tương thích"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                  error={errors.compatible_models}
                 />
               </div>
             )}
@@ -348,17 +402,20 @@ export default function EVForm() {
             <h2 className="text-xl font-semibold mb-4 border-b border-gray-300 pb-2">
               Giá bán
             </h2>
-            <div className="flex items-center gap-3">
-              <input
-                name="price"
-                type="number"
-                placeholder="Nhập giá..."
-                className="px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                value={formData.price}
-                onChange={handleChange}
-                required
-              />
-              <span className="font-semibold">VNĐ</span>
+            <div>
+              <div className="flex items-center gap-3">
+                <FormInput
+                  name="price"
+                  type="number"
+                  placeholder="Nhập giá..."
+                  className="px-4 py-2 rounded-md"
+                  value={formData.price}
+                  onChange={handleChange}
+                  error={errors.price}
+                  required
+                />
+                <span className="font-semibold">VNĐ</span>
+              </div>
             </div>
           </section>
 
@@ -367,14 +424,23 @@ export default function EVForm() {
             <h2 className="text-xl font-semibold mb-4 border-b border-gray-300 pb-2">
               Mô tả chi tiết
             </h2>
-            <textarea
-              name="content"
-              placeholder="Mô tả chi tiết về xe, tình trạng, bảo hành, lịch sử sử dụng..."
-              className="w-full h-40 p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-transparent resize-none"
-              value={formData.content}
-              onChange={handleChange}
-              required
-            />
+            <div>
+              <textarea
+                name="content"
+                placeholder="Mô tả chi tiết về xe, tình trạng, bảo hành, lịch sử sử dụng... (tối thiểu 20 ký tự)"
+                className={`w-full h-40 p-3 rounded-lg border focus:ring-2 focus:border-transparent resize-none transition-colors ${
+                  errors.content
+                    ? "border-red-500 focus:ring-red-200 focus:border-red-500"
+                    : "border-gray-300 focus:ring-gray-500 focus:border-gray-500"
+                }`}
+                value={formData.content}
+                onChange={handleChange}
+                required
+              />
+              {errors.content && (
+                <p className="text-red-500 text-sm mt-1">{errors.content}</p>
+              )}
+            </div>
           </section>
 
           <div className="flex justify-between items-center">
