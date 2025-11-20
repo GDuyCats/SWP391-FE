@@ -8,6 +8,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { api } from "../services/api";
+import { validateEmail, validateUsername, validatePassword, validateForm } from "../utils/validation";
 
 const COOLDOWN_SEC = 60;
 
@@ -18,6 +19,7 @@ function Register() {
   const [toastVisible, setToastVisible] = useState(false);
   const [hasActiveVerifyToken, setHasActiveVerifyToken] = useState(false);
   const [cooldownLeft, setCooldownLeft] = useState(0);
+  const [errors, setErrors] = useState({ email: "", username: "", password: "" });
 
   useEffect(() => {
     if (cooldownLeft <= 0) return;
@@ -37,12 +39,31 @@ function Register() {
   const handleChange = (e) => {
     const { id, value } = e.target;
     setForm((prev) => ({ ...prev, [id]: value }));
+    
+    // Clear error when user types
+    if (errors[id]) {
+      setErrors((prev) => ({ ...prev, [id]: "" }));
+    }
   };
 
   const handleRegisterOrResend = async () => {
     if (cooldownLeft > 0) {
       showToast("error", `Vui lòng đợi ${cooldownLeft}s`);
       return;
+    }
+
+    // Validate form only for first registration
+    if (!hasActiveVerifyToken) {
+      const validation = validateForm({
+        email: validateEmail(form.email),
+        username: validateUsername(form.username),
+        password: validatePassword(form.password),
+      });
+
+      if (!validation.isValid) {
+        setErrors(validation.errors);
+        return;
+      }
     }
 
     try {
@@ -172,11 +193,16 @@ function Register() {
                   value={form.email}
                   onChange={handleChange}
                   placeholder="email@example.com"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl
-                    focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100
-                    transition-all"
+                  className={`w-full pl-11 pr-4 py-3 border rounded-xl
+                    focus:outline-none focus:ring-2 transition-all
+                    ${errors.email 
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-100' 
+                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-100'}`}
                 />
               </div>
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+              )}
             </div>
 
             {/* Username Input */}
@@ -192,11 +218,16 @@ function Register() {
                   value={form.username}
                   onChange={handleChange}
                   placeholder="Nhập tên người dùng"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl
-                    focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100
-                    transition-all"
+                  className={`w-full pl-11 pr-4 py-3 border rounded-xl
+                    focus:outline-none focus:ring-2 transition-all
+                    ${errors.username 
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-100' 
+                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-100'}`}
                 />
               </div>
+              {errors.username && (
+                <p className="text-red-500 text-sm mt-1">{errors.username}</p>
+              )}
             </div>
 
             {/* Password Input */}
@@ -211,12 +242,17 @@ function Register() {
                   type="password"
                   value={form.password}
                   onChange={handleChange}
-                  placeholder="Nhập mật khẩu"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl
-                    focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100
-                    transition-all"
+                  placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                  className={`w-full pl-11 pr-4 py-3 border rounded-xl
+                    focus:outline-none focus:ring-2 transition-all
+                    ${errors.password 
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-100' 
+                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-100'}`}
                 />
               </div>
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+              )}
             </div>
 
             {/* Submit Button */}

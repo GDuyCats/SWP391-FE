@@ -2,17 +2,28 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { api } from "../services/api"; // <— dùng instance
 import { User, Lock, CheckCircle, XCircle } from "lucide-react";
+import {
+  validateUsername,
+  validatePassword,
+  validateForm,
+} from "../utils/validation";
 
 function Login() {
   const [form, setForm] = useState({ username: "", password: "" });
   const [toast, setToast] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
+  const [errors, setErrors] = useState({ username: "", password: "" });
   const location = useLocation();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { id, value } = e.target;
     setForm((prev) => ({ ...prev, [id]: value }));
+
+    // Clear error when user types
+    if (errors[id]) {
+      setErrors((prev) => ({ ...prev, [id]: "" }));
+    }
   };
 
   const showToast = (type, msg, duration = 3000) => {
@@ -54,6 +65,17 @@ function Login() {
   }, [location.pathname]);
 
   const handleLogin = async () => {
+    // Validate form
+    const validation = validateForm({
+      username: validateUsername(form.username),
+      password: validatePassword(form.password),
+    });
+
+    if (!validation.isValid) {
+      setErrors(validation.errors);
+      return;
+    }
+
     try {
       const resp = await api.post("/login", {
         // <— gọi đúng baseURL
@@ -167,11 +189,18 @@ function Login() {
                   value={form.username}
                   onChange={handleChange}
                   placeholder="Nhập tên người dùng"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl
-                    focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100
-                    transition-all"
+                  className={`w-full pl-11 pr-4 py-3 border rounded-xl
+                    focus:outline-none focus:ring-2 transition-all
+                    ${
+                      errors.username
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-100"
+                        : "border-gray-300 focus:border-blue-500 focus:ring-blue-100"
+                    }`}
                 />
               </div>
+              {errors.username && (
+                <p className="text-red-500 text-sm mt-1">{errors.username}</p>
+              )}
             </div>
 
             {/* Password Input */}
@@ -187,11 +216,18 @@ function Login() {
                   value={form.password}
                   onChange={handleChange}
                   placeholder="Nhập mật khẩu"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl
-                    focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100
-                    transition-all"
+                  className={`w-full pl-11 pr-4 py-3 border rounded-xl
+                    focus:outline-none focus:ring-2 transition-all
+                    ${
+                      errors.password
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-100"
+                        : "border-gray-300 focus:border-blue-500 focus:ring-blue-100"
+                    }`}
                 />
               </div>
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+              )}
             </div>
 
             {/* Login Button */}

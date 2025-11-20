@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import EditButton from "../components/EditButton";
 import { api } from "../services/api";
 import { SquareUserRound } from "lucide-react";
+import { validateEmail, validatePhone } from "../utils/validation";
 
 function Profile() {
   const [profile, setProfile] = useState(null);
@@ -9,6 +10,7 @@ function Profile() {
   const [error, setError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({ email: "", phone: "" });
+  const [errors, setErrors] = useState({ email: "", phone: "" });
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -83,6 +85,29 @@ function Profile() {
                 className="grid grid-cols-1 md:grid-cols-2 gap-4"
                 onSubmit={async (e) => {
                   e.preventDefault();
+                  
+                  // Validate form
+                  const validationErrors = {};
+                  
+                  if (form.email) {
+                    const emailValidation = validateEmail(form.email);
+                    if (!emailValidation.isValid) {
+                      validationErrors.email = emailValidation.message;
+                    }
+                  }
+                  
+                  if (form.phone) {
+                    const phoneValidation = validatePhone(form.phone);
+                    if (!phoneValidation.isValid) {
+                      validationErrors.phone = phoneValidation.message;
+                    }
+                  }
+                  
+                  if (Object.keys(validationErrors).length > 0) {
+                    setErrors(validationErrors);
+                    return;
+                  }
+                  
                   try {
                     // API interceptor đã tự động thêm token vào header
                     // Backend endpoint update (kiểm tra Swagger để xác nhận)
@@ -115,12 +140,20 @@ function Profile() {
                   <input
                     type="email"
                     value={form.email}
-                    onChange={(e) =>
-                      setForm({ ...form, email: e.target.value })
-                    }
-                    className="w-full border rounded-md px-3 py-2"
+                    onChange={(e) => {
+                      setForm({ ...form, email: e.target.value });
+                      if (errors.email) setErrors({ ...errors, email: "" });
+                    }}
+                    className={`w-full border rounded-md px-3 py-2 focus:ring-2 focus:outline-none transition-colors ${
+                      errors.email
+                        ? "border-red-500 focus:ring-red-200"
+                        : "border-gray-300 focus:ring-blue-200"
+                    }`}
                     placeholder="name@example.com"
                   />
+                  {errors.email && (
+                    <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm text-gray-500 mb-1">
@@ -129,12 +162,20 @@ function Profile() {
                   <input
                     type="tel"
                     value={form.phone}
-                    onChange={(e) =>
-                      setForm({ ...form, phone: e.target.value })
-                    }
-                    className="w-full border rounded-md px-3 py-2"
+                    onChange={(e) => {
+                      setForm({ ...form, phone: e.target.value });
+                      if (errors.phone) setErrors({ ...errors, phone: "" });
+                    }}
+                    className={`w-full border rounded-md px-3 py-2 focus:ring-2 focus:outline-none transition-colors ${
+                      errors.phone
+                        ? "border-red-500 focus:ring-red-200"
+                        : "border-gray-300 focus:ring-blue-200"
+                    }`}
                     placeholder="0123456789"
                   />
+                  {errors.phone && (
+                    <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
+                  )}
                 </div>
                 <div className="md:col-span-2 flex gap-3 mt-2">
                   <button
@@ -152,6 +193,7 @@ function Profile() {
                         email: profile.email || "",
                         phone: profile.phone || "",
                       });
+                      setErrors({ email: "", phone: "" });
                     }}
                   >
                     Hủy
