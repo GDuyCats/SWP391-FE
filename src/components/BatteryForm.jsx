@@ -3,6 +3,15 @@ import { ArrowLeft, Upload, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 import Toast from "./Toast";
+import FormInput from "./FormInput";
+import {
+  validateRequired,
+  validatePhone,
+  validatePrice,
+  validateNumber,
+  validateTextLength,
+  validateForm,
+} from "../utils/validation";
 
 export default function BatteryForm() {
   const navigate = useNavigate();
@@ -11,6 +20,7 @@ export default function BatteryForm() {
   const [imagesPreview, setImagesPreview] = useState([]);
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
     title: "",
@@ -41,6 +51,11 @@ export default function BatteryForm() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleContinue = async (e) => {
@@ -54,6 +69,44 @@ export default function BatteryForm() {
         type: "error",
       });
       setLoading(false);
+      return;
+    }
+
+    // Validate form
+    const validations = {
+      title: validateTextLength(formData.title, "Tiêu đề bài đăng", { min: 5, max: 200 }),
+      battery_brand: validateRequired(formData.battery_brand, "Hãng pin"),
+      battery_model: validateRequired(formData.battery_model, "Model pin"),
+      battery_capacity: validateNumber(formData.battery_capacity, "Dung lượng pin", { min: 1 }),
+      battery_type: validateRequired(formData.battery_type, "Loại pin"),
+      battery_range: validateNumber(formData.battery_range, "Quãng đường di chuyển", { min: 1 }),
+      battery_condition: validateRequired(formData.battery_condition, "Tình trạng pin"),
+      charging_time: validateNumber(formData.charging_time, "Thời gian sạc", { min: 0.1 }),
+      price: validatePrice(formData.price),
+      content: validateTextLength(formData.content, "Mô tả chi tiết", { min: 20, max: 5000 }),
+    };
+
+    // Phone is optional, but validate if provided
+    if (formData.phone && formData.phone.trim() !== "") {
+      validations.phone = validatePhone(formData.phone);
+    }
+
+    const validation = validateForm(validations);
+    if (!validation.isValid) {
+      setErrors(validation.errors);
+      setToast({
+        msg: "Vui lòng kiểm tra lại các trường thông tin",
+        type: "error",
+      });
+      setLoading(false);
+      
+      // Scroll to first error
+      const firstErrorField = Object.keys(validation.errors)[0];
+      const element = document.getElementsByName(firstErrorField)[0];
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        element.focus();
+      }
       return;
     }
 
@@ -136,96 +189,95 @@ export default function BatteryForm() {
               Thông tin kỹ thuật pin
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <input
+              <FormInput
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
                 type="text"
                 placeholder="Tiêu đề bài đăng *"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                error={errors.title}
                 required
               />
-              <input
+              <FormInput
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
                 type="tel"
                 placeholder="Số điện thoại liên hệ"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                pattern="[0-9]{10,11}"
-                title="Vui lòng nhập số điện thoại hợp lệ (10-11 số)"
+                error={errors.phone}
               />
-              <input
+              <FormInput
                 name="battery_brand"
                 value={formData.battery_brand}
                 onChange={handleChange}
                 type="text"
                 placeholder="Hãng pin *"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                error={errors.battery_brand}
                 required
               />
-              <input
+              <FormInput
                 name="battery_model"
                 value={formData.battery_model}
                 onChange={handleChange}
                 type="text"
                 placeholder="Model pin *"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                error={errors.battery_model}
                 required
               />
-              <input
+              <FormInput
                 name="battery_capacity"
                 value={formData.battery_capacity}
                 onChange={handleChange}
                 type="number"
                 placeholder="Dung lượng pin (kWh) *"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                error={errors.battery_capacity}
                 required
               />
-              <input
+              <FormInput
                 name="battery_type"
                 value={formData.battery_type}
                 onChange={handleChange}
                 type="text"
                 placeholder="Loại pin (LFP, NMC,...) *"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                error={errors.battery_type}
                 required
               />
-              <input
+              <FormInput
                 name="battery_range"
                 value={formData.battery_range}
                 onChange={handleChange}
                 type="number"
                 placeholder="Quãng đường di chuyển (km) *"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                error={errors.battery_range}
                 required
               />
-              <input
+              <FormInput
                 name="battery_condition"
                 value={formData.battery_condition}
                 onChange={handleChange}
                 type="text"
                 placeholder="Tình trạng pin (Còn 90%,...) *"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                error={errors.battery_condition}
                 required
               />
-              <input
+              <FormInput
                 name="charging_time"
                 value={formData.charging_time}
                 onChange={handleChange}
                 type="number"
                 step="0.1"
                 placeholder="Thời gian sạc (giờ) *"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                error={errors.charging_time}
                 required
               />
-              <input
+              <FormInput
                 name="compatible_models"
                 value={formData.compatible_models}
                 onChange={handleChange}
                 type="text"
                 placeholder='Xe tương thích (VD: ["VF e34","VF 5"])'
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent col-span-1 md:col-span-2"
+                className="col-span-1 md:col-span-2"
+                error={errors.compatible_models}
               />
             </div>
           </section>
@@ -262,17 +314,20 @@ export default function BatteryForm() {
             <h2 className="text-xl font-semibold mb-4 border-b border-gray-300 pb-2">
               Giá bán
             </h2>
-            <div className="flex items-center gap-3">
-              <input
-                name="price"
-                type="number"
-                placeholder="Nhập giá..."
-                className="px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                value={formData.price}
-                onChange={handleChange}
-                required
-              />
-              <span className="font-semibold">VNĐ</span>
+            <div>
+              <div className="flex items-center gap-3">
+                <FormInput
+                  name="price"
+                  type="number"
+                  placeholder="Nhập giá..."
+                  className="px-4 py-2 rounded-md"
+                  value={formData.price}
+                  onChange={handleChange}
+                  error={errors.price}
+                  required
+                />
+                <span className="font-semibold">VNĐ</span>
+              </div>
             </div>
           </section>
 
@@ -280,14 +335,23 @@ export default function BatteryForm() {
             <h2 className="text-xl font-semibold mb-4 border-b border-gray-300 pb-2">
               Mô tả chi tiết
             </h2>
-            <textarea
-              name="content"
-              placeholder="Mô tả chi tiết về pin, tình trạng, bảo hành, lịch sử sử dụng..."
-              className="w-full h-40 p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-transparent resize-none"
-              value={formData.content}
-              onChange={handleChange}
-              required
-            />
+            <div>
+              <textarea
+                name="content"
+                placeholder="Mô tả chi tiết về pin, tình trạng, bảo hành, lịch sử sử dụng... (tối thiểu 20 ký tự)"
+                className={`w-full h-40 p-3 rounded-lg border focus:ring-2 focus:border-transparent resize-none transition-colors ${
+                  errors.content
+                    ? "border-red-500 focus:ring-red-200 focus:border-red-500"
+                    : "border-gray-300 focus:ring-gray-500 focus:border-gray-500"
+                }`}
+                value={formData.content}
+                onChange={handleChange}
+                required
+              />
+              {errors.content && (
+                <p className="text-red-500 text-sm mt-1">{errors.content}</p>
+              )}
+            </div>
           </section>
 
           <div className="flex justify-between items-center">
