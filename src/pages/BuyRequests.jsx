@@ -20,8 +20,8 @@ export default function BuyRequests() {
                 const allPosts = res.data.data || [];
                 const pinPosts = allPosts.filter(
                     (p) =>
-                        p.category?.toLowerCase() === "battery" ||
-                        p.title?.toLowerCase().includes("pin")
+                        p.category?.toLowerCase() === "battery" 
+                        // p.title?.toLowerCase().includes("pin")
                 );
                 setPosts(pinPosts);
             }
