@@ -145,12 +145,12 @@ function CarDetails() {
                             {post.User?.username || post.username || "N/A"}
                           </span>
                         </p>
-                        {post.phone && (
+                        {/* {post.phone && (
                           <p>
                             Số điện thoại:{" "}
                             <span className="font-semibold">{post.phone}</span>
                           </p>
-                        )}
+                        )} */}
                       </div>
                     </div>
 
@@ -332,9 +332,9 @@ function CarDetails() {
                       <button className="flex-1 bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors font-medium">
                         Gửi yêu cầu mua xe
                       </button>
-                      <button className="flex-1 border-2 border-gray-300 text-gray-900 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium">
+                      {/* <button className="flex-1 border-2 border-gray-300 text-gray-900 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium">
                         Liên hệ người bán
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 </div>
