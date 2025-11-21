@@ -72,7 +72,7 @@ const AdminHeader = () => {
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              <UserDropdown username={user.username} />
+              <UserDropdown username={user.username} role={user.role} />
               <button
                 onClick={handleLogout}
                 className="text-gray-900 hover:text-gray-600 px-3 py-2 text-sm font-medium transition-colors"

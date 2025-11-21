@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const UserDropdown = ({ username }) => {
+const UserDropdown = ({ username, role }) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [hoverTimeoutId, setHoverTimeoutId] = useState(null);
@@ -29,7 +29,7 @@ const UserDropdown = ({ username }) => {
         Xin chào, <span className="font-bold">{username}</span>
       </span>
 
-      {open && (
+      {role !== "admin" && role !== "staff" && open && (
         <div className="absolute right-0 mt-2 w-56 rounded-md bg-white shadow-lg ring-1 ring-black/5 z-50">
           <div className="py-1">
             <button
@@ -51,7 +51,6 @@ const UserDropdown = ({ username }) => {
             >
               Quản lý hợp đồng
             </button>
-
 
             <button
               onClick={() => navigate("/postmanagement")}
