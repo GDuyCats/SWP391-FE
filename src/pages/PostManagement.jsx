@@ -91,7 +91,7 @@ function PostManagement() {
                             <tr>
                                 <th className="border-b px-4 py-3 text-left w-16">ID</th>
                                 <th className="border-b px-4 py-3 text-left w-1/4">Tiêu đề</th>
-                                <th className="border-b px-4 py-3 text-left w-1/2">Nội dung</th>
+                                <th className="border-b px-4 py-3 text-left w-1/2">Trạng thái</th>
                                 <th className="border-b px-4 py-3 text-center w-1/6">Thao tác</th>
                             </tr>
                         </thead>
@@ -108,7 +108,7 @@ function PostManagement() {
                                             {post.title}
                                         </td>
                                         <td className="border-b px-4 py-3 text-gray-700">
-                                            {post.content}
+                                            {post.isActive ? 'Đang hoạt động' : 'Không hoạt động'}
                                         </td>
                                         <td className="border-b px-4 py-3 text-center">
                                             <div className="flex justify-center gap-3">
