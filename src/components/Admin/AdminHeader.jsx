@@ -41,7 +41,7 @@ const AdminHeader = () => {
           className="flex items-center gap-2"
         >
           <img src={logo} alt="EVPowerup" className="h-10 w-10" />
-          <span className="text-lg font-bold text-gray-900">EVPowerup Admin</span>
+          <span className="text-lg font-bold text-gray-900">EVPowerup</span>
         </button>
 
         {/* Search */}

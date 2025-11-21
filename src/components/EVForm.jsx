@@ -59,11 +59,18 @@ export default function EVForm() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
+    // Tự động loại bỏ khoảng trống cho số điện thoại
+    let processedValue = value;
+    if (name === "phone" && type !== "checkbox") {
+      processedValue = value.replace(/\s/g, "");
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === "checkbox" ? checked : processedValue,
     }));
-    
+
     // Clear error when user types
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -86,21 +93,36 @@ export default function EVForm() {
 
     // Validate form
     const validations = {
-      title: validateTextLength(formData.title, "Tiêu đề bài đăng", { min: 5, max: 200 }),
+      title: validateTextLength(formData.title, "Tiêu đề bài đăng", {
+        min: 5,
+        max: 200,
+      }),
       phone: validatePhone(formData.phone),
       brand: validateRequired(formData.brand, "Hãng xe"),
       model: validateRequired(formData.model, "Dòng xe"),
       year: validateYear(formData.year),
       condition: validateRequired(formData.condition, "Tình trạng"),
       price: validatePrice(formData.price),
-      content: validateTextLength(formData.content, "Mô tả chi tiết", { min: 20, max: 5000 }),
+      content: validateTextLength(formData.content, "Mô tả chi tiết", {
+        min: 20,
+        max: 5000,
+      }),
     };
 
     // If hasBattery is checked, validate battery fields
     if (formData.hasBattery) {
-      validations.battery_brand = validateRequired(formData.battery_brand, "Thương hiệu pin");
-      validations.battery_model = validateRequired(formData.battery_model, "Model pin");
-      validations.battery_capacity = validateRequired(formData.battery_capacity, "Dung lượng pin");
+      validations.battery_brand = validateRequired(
+        formData.battery_brand,
+        "Thương hiệu pin"
+      );
+      validations.battery_model = validateRequired(
+        formData.battery_model,
+        "Model pin"
+      );
+      validations.battery_capacity = validateRequired(
+        formData.battery_capacity,
+        "Dung lượng pin"
+      );
     }
 
     const validation = validateForm(validations);
@@ -111,7 +133,7 @@ export default function EVForm() {
         type: "error",
       });
       setLoading(false);
-      
+
       // Scroll to first error
       const firstErrorField = Object.keys(validation.errors)[0];
       const element = document.getElementsByName(firstErrorField)[0];

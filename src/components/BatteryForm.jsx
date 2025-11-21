@@ -50,8 +50,15 @@ export default function BatteryForm() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
     
+    // Tự động loại bỏ khoảng trống cho số điện thoại
+    let processedValue = value;
+    if (name === "phone") {
+      processedValue = value.replace(/\s/g, "");
+    }
+    
+    setFormData((prev) => ({ ...prev, [name]: processedValue }));
+
     // Clear error when user types
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
