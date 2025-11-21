@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { 
-  X, FileText, User, Tag, DollarSign, Calendar, MessageSquare, Star 
+import {
+  X, FileText, User, Tag, DollarSign, Calendar, MessageSquare, Star
 } from "lucide-react";
+import { PhotoProvider, PhotoView } from "react-photo-view";
 import { api } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import Toast from "../components/Toast";
@@ -13,6 +14,7 @@ export default function PostDetailDialog({ open, onClose, postId }) {
   const [toast, setToast] = useState(false);
   const [type, setType] = useState("");
   const [msg, setMsg] = useState("");
+  const [id, setId] = useState(0);
 
   // Hàm render cấp VIP
   const renderVipTier = (tier) => {
@@ -62,6 +64,31 @@ export default function PostDetailDialog({ open, onClose, postId }) {
       setMsg(errorMsg);
     } finally {
       setLoading(false);
+      setTimeout(() => setToast(false), 3000);
+    }
+  }
+
+  async function handleDelete(id) {
+    try {
+      const res = api.delete(`/admin/${id}/delete`);
+      console.log(res);
+      if (res.status === 200) {
+
+        setToast(true);
+        setType("success");
+        setMsg("Xóa bài đăng thành công");
+      }
+    } catch (error) {
+      const status = error?.response?.status;
+      const msg = error?.response?.data;
+      let errorMsg = "Không thể xóa bài đăng";
+      setToast(true);
+      setType("error");
+      if (status === 401) errorMsg = msg || "Unauthorized";
+      else if (status === 404) errorMsg = msg || "Bài đăng không tồn tại";
+      else if (status === 500) errorMsg = msg || "Lỗi máy chủ";
+      setMsg(errorMsg);
+    } finally {
       setTimeout(() => setToast(false), 3000);
     }
   }
@@ -178,35 +205,75 @@ export default function PostDetailDialog({ open, onClose, postId }) {
             </div>
 
             {/* Mô tả */}
-            {post.description && (
+            {post.content && (
               <div className="border-t pt-4">
                 <div className="flex items-start gap-3">
                   <MessageSquare className="w-5 h-5 text-gray-500 mt-1" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500 mb-1">Mô tả</p>
                     <p className="text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">
-                      {post.description}
+                      {post.content}
                     </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Trạng thái */}
-            <div className="border-t pt-4 flex items-center gap-3">
-              <div className="w-5 h-5">
-                {post.verifyStatus === "verify" ? (
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                ) : (
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                )}
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Trạng thái</p>
-                <p className="font-medium">
-                  {post.verifyStatus === "verify" ? "Đã duyệt" : "Chờ duyệt"}
-                </p>
-              </div>
+            <PhotoProvider>
+              {post.image && post.image.length > 0 ? (
+                post.image.map((img, index) => (
+                  <PhotoView key={index} src={img}>
+                    <div key={index} className="overflow-hidden rounded-lg shadow-lg">
+                      <img
+                        src={img}
+                        alt={`${post.title} - ${index + 1}`}
+                        className="w-full h-48 object-cover hover:scale-10</div>5 transition-transform duration-300 cursor-pointer"
+                      />
+                    </div>
+                  </PhotoView>
+                ))
+              ) : (
+                <div className="md:col-span-2 text-center py-12">
+                  <Image className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <p className="text-lg text-gray-600">
+                    No additional images available
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Only the main project image is available for viewing
+                  </p>
+                </div>
+              )}
+            </PhotoProvider>
+
+              {/* Trạng thái */}
+              <div className="border-t pt-4 flex items-center justify-between w-full">
+                <div className="flex items-center">
+                <div className="w-5 h-5">
+                  {post.verifyStatus === "verify" ? (
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  ) : (
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Trạng thái</p>
+                  <p className="font-medium">
+                    {post.verifyStatus === "verify" ? "Đã duyệt" : "Chờ duyệt"}
+                  </p>
+                </div>
+</div>
+                <div>
+                  <button
+                    onClick={() => handleDelete(post.id)}
+                    className="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600 shadow-sm transition cursor-pointer text-sm"
+                  >
+                    Xóa bài
+                  </button>
+                </div>
+
+
+
+
             </div>
           </div>
         )}

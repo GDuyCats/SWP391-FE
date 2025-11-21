@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { X, FileText, User, Tag, DollarSign, Calendar, Star } from "lucide-react";
+import { X, FileText, User, Tag, DollarSign, Calendar, Star, MessageSquare } from "lucide-react";
+import { PhotoProvider, PhotoView } from "react-photo-view";
+import "react-photo-view/dist/react-photo-view.css";
 import { api } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import Toast from "../components/Toast";
@@ -41,7 +43,9 @@ export default function PostDetailSellerDialog({ open, onClose, postId }) {
     async function getPostDetail() {
         setLoading(true);
         try {
-            const res = await api.get(`/posts/${postId}`);
+            const res = await api.get(`/post/${postId}/detail`);
+            console.log(res);
+            
             if (res.status === 200) {
                 setPost(res.data.data);
                 setToast(true);
@@ -188,6 +192,31 @@ export default function PostDetailSellerDialog({ open, onClose, postId }) {
                                 </div>
                             </div>
                         )}
+                        <PhotoProvider>
+                                    {post.image && post.image.length > 0 ? (
+                                        post.image.map((img, index) => (
+                                            <PhotoView key={index} src={img}>
+                                                <div key={index} className="overflow-hidden rounded-lg shadow-lg">
+                                                    <img
+                                                        src={img}
+                                                        alt={`${post.title} - ${index + 1}`}
+                                                        className="w-full h-48 object-cover hover:scale-10</div>5 transition-transform duration-300 cursor-pointer"
+                                                    />
+                                                </div>
+                                            </PhotoView>
+                                        ))
+                                    ) : (
+                                        <div className="md:col-span-2 text-center py-12">
+                                            <Image className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                                            <p className="text-lg text-gray-600">
+                                                No additional images available
+                                            </p>
+                                            <p className="text-sm text-gray-500">
+                                                Only the main project image is available for viewing
+                                            </p>
+                                        </div>
+                                    )}
+                                </PhotoProvider>
                     </div>
                 )}
             </div>
