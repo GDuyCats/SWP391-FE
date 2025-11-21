@@ -163,7 +163,9 @@ function Profile() {
                     type="tel"
                     value={form.phone}
                     onChange={(e) => {
-                      setForm({ ...form, phone: e.target.value });
+                      // Tự động loại bỏ khoảng trống
+                      const cleanValue = e.target.value.replace(/\s/g, "");
+                      setForm({ ...form, phone: cleanValue });
                       if (errors.phone) setErrors({ ...errors, phone: "" });
                     }}
                     className={`w-full border rounded-md px-3 py-2 focus:ring-2 focus:outline-none transition-colors ${

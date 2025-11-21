@@ -41,7 +41,7 @@ const AdminHeader = () => {
           className="flex items-center gap-2"
         >
           <img src={logo} alt="EVPowerup" className="h-10 w-10" />
-          <span className="text-lg font-bold text-gray-900">EVPowerup Admin</span>
+          <span className="text-lg font-bold text-gray-900">EVPowerup</span>
         </button>
 
         {/* Search */}
@@ -72,7 +72,7 @@ const AdminHeader = () => {
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              <UserDropdown username={user.username} />
+              <UserDropdown username={user.username} role={user.role} />
               <button
                 onClick={handleLogout}
                 className="text-gray-900 hover:text-gray-600 px-3 py-2 text-sm font-medium transition-colors"
