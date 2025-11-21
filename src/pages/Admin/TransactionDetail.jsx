@@ -1,18 +1,58 @@
 // src/pages/Admin/TransactionDetail.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Send, CheckCircle, DollarSign, User } from "lucide-react";
 import AdminHeader from "../../components/Admin/AdminHeader";
 import AdminSidebar from "../../components/Admin/AdminSidebar";
-import Toast from "../../components/Toast";
 import { api } from "../../services/api";
 
-/* ===== Utils ===== */
+/* =========================================================
+ * COMPONENT TOAST NỘI BỘ CHO TRANG NÀY
+ * - Dùng useEffect để auto ẩn sau 3s
+ * - type: "success" | "error" => đổi màu nền xanh / đỏ
+ * - message: nội dung text hiển thị
+ * - onClose: callback để parent setToast(null)
+ * =======================================================*/
+const Toast = ({ type = "success", message, onClose }) => {
+  useEffect(() => {
+    if (!message) return; // không có message thì không set timer
+
+    const timer = setTimeout(() => {
+      // Sau 3s tự gọi onClose để ẩn Toast
+      onClose && onClose();
+    }, 3000);
+
+    // clear timer nếu component unmount hoặc message/onClose đổi
+    return () => clearTimeout(timer);
+  }, [message, onClose]);
+
+  // chọn màu nền theo type
+  const bgClass = type === "error" ? "bg-red-500" : "bg-green-500";
+
+  return (
+    <div
+      className={`fixed top-5 right-5 px-4 py-3 rounded shadow-lg text-white text-sm ${bgClass}`}
+      style={{ zIndex: 9999 }} // đảm bảo nổi lên trên header
+    >
+      {message}
+    </div>
+  );
+};
+
+/* =========================================================
+ * HÀM TIỆN ÍCH XỬ LÝ SỐ & FORMAT TIỀN
+ * =======================================================*/
+
+// Chỉ giữ lại ký tự số trong chuỗi, loại bỏ . , chữ, space,...
 const onlyDigits = (s) => (s || "").replace(/[^\d]/g, "");
+
+// Chuyển string -> number, nếu rỗng thì trả 0
 const toNumber = (s) => {
   const clean = onlyDigits(s);
   return clean === "" ? 0 : Number(clean);
 };
+
+// Format số theo chuẩn tiền tệ Việt Nam
 const formatCurrency = (input) => {
   const n = typeof input === "string" ? toNumber(input) : Number(input || 0);
   return new Intl.NumberFormat("vi-VN").format(n);
@@ -21,30 +61,45 @@ const formatCurrency = (input) => {
 export default function TransactionDetail() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  // recordData được truyền từ trang TransactionRecords qua navigate state
   const recordData = location.state?.record;
 
-  /* ===== State ===== */
-  const [carPriceInput, setCarPriceInput] = useState("");
-  const [isEditingPrice, setIsEditingPrice] = useState(false);
-  const [finalCarPrice, setFinalCarPrice] = useState(null);
+  /* =========================================================
+   * STATE CHÍNH CHO MÀN HÌNH
+   * =======================================================*/
+
+  // State giá xe
+  const [carPriceInput, setCarPriceInput] = useState(""); // giá nhập trong input
+  const [isEditingPrice, setIsEditingPrice] = useState(false); // đang mở mode chỉnh giá
+  const [finalCarPrice, setFinalCarPrice] = useState(null); // giá đã chốt
+
+  // Trạng thái đã gửi hồ sơ cho Buyer / Seller
   const [buyerRecordSent, setBuyerRecordSent] = useState(false);
   const [sellerRecordSent, setSellerRecordSent] = useState(false);
-  const [buyerSending, setBuyerSending] = useState(false);
-  const [sellerSending, setSellerSending] = useState(false);
+  const [buyerSending, setBuyerSending] = useState(false); // loading khi gửi cho Buyer
+  const [sellerSending, setSellerSending] = useState(false); // loading khi gửi cho Seller
+
+  // Trạng thái gửi OTP & finalize
   const [otpSent, setOtpSent] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
   const [finalSending, setFinalSending] = useState(false);
+
+  // Toast: { type: "success" | "error", message: string } | null
   const [toast, setToast] = useState(null);
 
-  // 5 loại phí
+  /* =========================================================
+   * CẤU HÌNH CÁC LOẠI PHÍ (KEY DÙNG CHO STATE VÀ PAYLOAD API)
+   * =======================================================*/
   const feeTypes = [
-    "titleTransferFee",
-    "legalAndConditionCheckFee",
-    "adminProcessingFee",
-    "reinspectionOrRegistrationSupportFee",
-    "brokerageFee",
+    "titleTransferFee", // Phí chuyển nhượng quyền sở hữu
+    "legalAndConditionCheckFee", // Phí kiểm tra pháp lý & tình trạng xe
+    "adminProcessingFee", // Phí xử lý hành chính
+    "reinspectionOrRegistrationSupportFee", // Phí hỗ trợ đăng kiểm lại
+    "brokerageFee", // Phí môi giới
   ];
 
+  // Map key -> label tiếng Việt hiển thị trên UI
   const feeLabels = {
     titleTransferFee: "Phí chuyển nhượng quyền sở hữu",
     legalAndConditionCheckFee: "Phí kiểm tra pháp lý & tình trạng xe",
@@ -53,7 +108,7 @@ export default function TransactionDetail() {
     brokerageFee: "Phí môi giới",
   };
 
-  // State phí
+  // fees[key].buyer / fees[key].seller: số tiền mà từng bên chịu cho loại phí đó
   const [fees, setFees] = useState({
     titleTransferFee: { buyer: "", seller: "" },
     legalAndConditionCheckFee: { buyer: "", seller: "" },
@@ -62,7 +117,8 @@ export default function TransactionDetail() {
     brokerageFee: { buyer: "", seller: "" },
   });
 
-  // State: ai chịu phí
+  // feePayer[key] = "buyer" | "seller" | null
+  // cho biết loại phí đó bên nào đang chịu
   const [feePayer, setFeePayer] = useState({
     titleTransferFee: null,
     legalAndConditionCheckFee: null,
@@ -71,23 +127,37 @@ export default function TransactionDetail() {
     brokerageFee: null,
   });
 
-  /* ===== Endpoints ===== */
+  /* =========================================================
+   * KHAI BÁO CÁC ENDPOINT API SỬ DỤNG TRONG TRANG
+   * =======================================================*/
+  // Gửi OTP cho 2 bên (API backend cung cấp)
   const SEND_OTP_PATH = "/staff/contracts/send-otp";
+
+  // Gửi email nháp hợp đồng (draft contract) cho buyer/seller
   const SEND_DRAFT = "/staff/contracts/send-draft";
+
+  // Finalize hợp đồng: lưu agreedPrice + các loại phí + feeResponsibility vào DB
   const FINALIZE = "/staff/contracts/finalize";
 
-  /* ===== FE deep-links ===== */
-  const FE_ORIGIN = (import.meta.env.VITE_FE_ORIGIN || window.location.origin).replace(/\/$/, "");
-  const linkForA = (id) => `${FE_ORIGIN}/contract-a?contractId=${id}`;
-  const linkForB = (id) => `${FE_ORIGIN}/contract-b?contractId=${id}`;
-
-  /* ===== Helpers ===== */
+  /* =========================================================
+   * HÀM LẤY GIÁ XE ĐANG SỬ DỤNG
+   * - Nếu đã chốt (finalCarPrice != null) thì dùng finalCarPrice
+   * - Ngược lại lấy từ recordData.price
+   * =======================================================*/
   const getCarPrice = () => {
     if (finalCarPrice !== null) return finalCarPrice;
     if (!recordData?.price) return 0;
-    return typeof recordData.price === "number" ? recordData.price : toNumber(String(recordData.price));
+
+    return typeof recordData.price === "number"
+      ? recordData.price
+      : toNumber(String(recordData.price));
   };
 
+  /* =========================================================
+   * XỬ LÝ NÚT "XÁC NHẬN" TRONG BOX CHỐT GIÁ
+   * - Validate giá > 0
+   * - Nếu hợp lệ: set finalCarPrice và tắt mode edit
+   * =======================================================*/
   const handleConfirmPrice = () => {
     const price = toNumber(carPriceInput);
     if (price <= 0) {
@@ -99,7 +169,11 @@ export default function TransactionDetail() {
     setToast({ type: "success", message: "Đã chốt giá trị xe" });
   };
 
-  // Tính tổng phí
+  /* =========================================================
+   * TÍNH TỔNG PHÍ BUYER / SELLER
+   * - Chỉ cộng các loại phí mà feePayer[key] === "buyer" / "seller"
+   * - Dùng toNumber để tránh NaN nếu input rỗng
+   * =======================================================*/
   const getBuyerFee = () => {
     let total = 0;
     feeTypes.forEach((key) => {
@@ -116,26 +190,44 @@ export default function TransactionDetail() {
     return total;
   };
 
+  /* =========================================================
+   * VALIDATE PHÍ TRƯỚC KHI GỌI API FINALIZE / GỬI HỒ SƠ
+   * - Với mỗi loại phí:
+   *   + Nếu đã chọn payer (buyer/seller) thì số tiền của payer phải > 0
+   * =======================================================*/
   const validateFees = () => {
     let valid = true;
+
     feeTypes.forEach((key) => {
       const payer = feePayer[key];
       if (payer && toNumber(fees[key][payer]) <= 0) valid = false;
     });
+
     if (!valid) {
-      setToast({ type: "error", message: "Vui lòng nhập đầy đủ phí cho bên chịu trách nhiệm" });
+      setToast({
+        type: "error",
+        message: "Vui lòng nhập đầy đủ phí cho bên chịu trách nhiệm",
+      });
     }
     return valid;
   };
 
-  // Xử lý chọn bên chịu phí
+  /* =========================================================
+   * XỬ LÝ CHECKBOX CHỌN BÊN CHỊU PHÍ
+   * - Nếu click lại đúng bên đang chọn => bỏ chọn (set null) và clear cả buyer/seller
+   * - Nếu chọn bên mới => giữ số bên đó, clear số của bên còn lại
+   * =======================================================*/
   const handlePayerChange = (feeKey, payer) => {
+    // Trường hợp click lại cùng một bên => uncheck
     if (feePayer[feeKey] === payer) {
       setFeePayer((prev) => ({ ...prev, [feeKey]: null }));
       setFees((prev) => ({ ...prev, [feeKey]: { buyer: "", seller: "" } }));
     } else {
+      // Chọn payer mới
       setFeePayer((prev) => ({ ...prev, [feeKey]: payer }));
       const other = payer === "buyer" ? "seller" : "buyer";
+
+      // Giữ số bên đang chịu phí, clear số bên còn lại để tránh nhầm
       setFees((prev) => ({
         ...prev,
         [feeKey]: {
@@ -146,174 +238,38 @@ export default function TransactionDetail() {
     }
   };
 
+  /* =========================================================
+   * XỬ LÝ NHẬP SỐ TIỀN PHÍ CHO BUYER / SELLER
+   * - Chỉ cho phép nhập nếu role đang là payer
+   * - Dùng onlyDigits để loại bỏ ký tự ngoài số
+   * =======================================================*/
   const handleFeeChange = (feeKey, role, value) => {
-    if (feePayer[feeKey] !== role) return;
+    if (feePayer[feeKey] !== role) return; // nếu không phải bên chịu phí thì bỏ qua
+
     setFees((prev) => ({
       ...prev,
       [feeKey]: { ...prev[feeKey], [role]: onlyDigits(value) },
     }));
   };
 
-  /* ===== Build Contract URL & Email (client side) ===== */
-  const buildBuyerContractUrl = () => {
-    const price = getCarPrice();
-    const buyerFee = getBuyerFee();
-    const buyerTotal = price + buyerFee;
-    const url = new URL(linkForA(recordData.id));
-    url.searchParams.set("contractId", String(recordData.id));
-    url.searchParams.set("price", String(price));
-    url.searchParams.set("buyerFee", String(buyerFee));
-    url.searchParams.set("buyerTotal", String(buyerTotal));
-    return url.toString();
-  };
-
-  const buildSellerContractUrl = () => {
-    const price = getCarPrice();
-    const sellerFee = getSellerFee();
-    const sellerTotal = price - sellerFee;
-    const url = new URL(linkForB(recordData.id));
-    url.searchParams.set("contractId", String(recordData.id));
-    url.searchParams.set("price", String(price));
-    url.searchParams.set("sellerFee", String(sellerFee));
-    url.searchParams.set("sellerTotal", String(sellerTotal));
-    return url.toString();
-  };
-
-  const makeEmailHtml = ({ title, lines = [], ctaUrl, ctaLabel }) => {
-    const li = lines.map((l) => `<li style="margin:4px 0">${l}</li>`).join("");
-    return `
-      <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111;max-width:600px;margin:auto">
-        <h2 style="margin:0 0 12px;color:#1a1a1a">${title}</h2>
-        <ul style="padding-left:20px;margin:8px 0">${li}</ul>
-        <p style="margin:20px 0">
-          <a href="${ctaUrl}" target="_blank" rel="noopener"
-             style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;
-                    padding:14px 24px;border-radius:12px;font-weight:600;font-size:16px">
-            ${ctaLabel}
-          </a>
-        </p>
-        <p style="color:#666;font-size:13px">Nếu nút không hoạt động, mở: <br><a href="${ctaUrl}" style="color:#2563eb">${ctaUrl}</a></p>
-      </div>`;
-  };
-
-  const buildEmailFor = (aud) => {
-    const price = getCarPrice();
-    const buyerFee = getBuyerFee();
-    const sellerFee = getSellerFee();
-    const buyerTotal = price + buyerFee;
-    const sellerTotal = price - sellerFee;
-
-    const feeLines = feeTypes
-      .map((key) => {
-        const payer = feePayer[key];
-        const amount =
-          payer === "buyer"
-            ? toNumber(fees[key].buyer)
-            : payer === "seller"
-            ? toNumber(fees[key].seller)
-            : 0;
-        if (amount <= 0) return null;
-        return `<b>${feeLabels[key]}:</b> ${formatCurrency(
-          amount
-        )} VNĐ <span style="color:#666">(${payer === "buyer" ? "Buyer" : "Seller"} chịu)</span>`;
-      })
-      .filter(Boolean);
-
-    if (aud === "buyer") {
-      const ctaUrl = buildBuyerContractUrl();
-      const subject = `[EV] Hợp đồng #${recordData.id} – Bên A | Phí ${formatCurrency(
-        buyerFee
-      )}đ | Tổng ${formatCurrency(buyerTotal)}đ`;
-      const lines = [
-        `Giá chốt: <b>${formatCurrency(price)} VNĐ</b>`,
-        ...feeLines.filter((line) => line.includes("Buyer")),
-        `<b>Tổng phí Buyer:</b> ${formatCurrency(buyerFee)} VNĐ`,
-        `<b>Tổng thanh toán:</b> ${formatCurrency(buyerTotal)} VNĐ`,
-      ];
-      return {
-        toRole: "buyer",
-        subject,
-        text:
-          lines.map((l) => l.replace(/<[^>]*>/g, "")).join("\n") +
-          `\nMở: ${ctaUrl}`,
-        html: makeEmailHtml({
-          title: `Hồ sơ #${recordData.id} – Bên A`,
-          lines,
-          ctaUrl,
-          ctaLabel: "Mở Contract A & Nhập OTP",
-        }),
-        ctaUrl,
-      };
-    }
-
-    const ctaUrl = buildSellerContractUrl();
-    const subject = `[EV] Hợp đồng #${recordData.id} – Bên B | Phí ${formatCurrency(
-      sellerFee
-    )}đ | Nhận ${formatCurrency(sellerTotal)}đ`;
-    const lines = [
-      `Giá chốt: <b>${formatCurrency(price)} VNĐ</b>`,
-      ...feeLines.filter((line) => line.includes("Seller")),
-      `<b>Tổng phí Seller:</b> ${formatCurrency(sellerFee)} VNĐ`,
-      `<b>Tổng nhận được:</b> ${formatCurrency(sellerTotal)} VNĐ`,
-    ];
-    return {
-      toRole: "seller",
-      subject,
-      text:
-        lines.map((l) => l.replace(/<[^>]*>/g, "")).join("\n") +
-        `\nMở: ${ctaUrl}`,
-      html: makeEmailHtml({
-        title: `Hồ sơ #${recordData.id} – Bên B`,
-        lines,
-        ctaUrl,
-        ctaLabel: "Mở Contract B & Nhập OTP",
-      }),
-      ctaUrl,
-    };
-  };
-
-  // Client build (server /send-draft chỉ dùng contractId để render từ DB nếu muốn)
-  const buildDraftPayload = (aud) => {
-    const price = getCarPrice();
-    const buyerFee = getBuyerFee();
-    const sellerFee = getSellerFee();
-    const email = buildEmailFor(aud);
-
-    const feeDetails = feeTypes.reduce((acc, key) => {
-      const payer = feePayer[key];
-      if (!payer) return acc;
-      const amount = toNumber(fees[key][payer] || 0);
-      acc[key] = { amount, payer };
-      return acc;
-    }, {});
-
-    return {
-      contractId: recordData.id,
-      audience: aud,
-      finalPrice: price,
-      buyerFee: aud === "buyer" ? buyerFee : undefined,
-      sellerFee: aud === "seller" ? sellerFee : undefined,
-      feeDetails,
-      toRole: email.toRole,
-      subject: email.subject,
-      text: email.text,
-      html: email.html,
-      ctaUrl: email.ctaUrl,
-      sendMode: "html+text",
-      contentType: "text/html",
-    };
-  };
-
-  /* ===== FINALIZE payload theo Swagger ===== */
+  /* =========================================================
+   * BUILD PAYLOAD GỬI LÊN API FINALIZE
+   * - contractId: id của hồ sơ / hợp đồng
+   * - agreedPrice: giá xe đã chốt
+   * - các field phí: lấy theo feePayer + fees
+   * - feeResponsibility: map loại phí -> "buyer"/"seller"
+   * =======================================================*/
   const buildFinalizePayload = () => {
     const price = getCarPrice();
 
+    // Lấy số tiền cho từng loại phí theo payer
     const getAmount = (key) => {
       const payer = feePayer[key];
       if (!payer) return 0;
       return toNumber(fees[key][payer] || 0);
     };
 
+    // feeResponsibility dùng để backend biết loại phí đó bên nào chịu
     const feeResponsibility = {};
     feeTypes.forEach((key) => {
       if (feePayer[key] === "buyer" || feePayer[key] === "seller") {
@@ -328,72 +284,56 @@ export default function TransactionDetail() {
       titleTransferFee: getAmount("titleTransferFee"),
       legalAndConditionCheckFee: getAmount("legalAndConditionCheckFee"),
       adminProcessingFee: getAmount("adminProcessingFee"),
-      reinspectionOrRegistrationSupportFee: getAmount("reinspectionOrRegistrationSupportFee"),
+      reinspectionOrRegistrationSupportFee: getAmount(
+        "reinspectionOrRegistrationSupportFee"
+      ),
       feeResponsibility,
-      note: "",
+      note: "", // tạm thời chưa dùng
     };
   };
 
-  /* ===== API calls ===== */
-
-  // GỬI DRAFT: gửi FULL payload để email có đủ phí (không chỉ { contractId })
-  const sendDraftOne = async (aud) => {
-    const price = getCarPrice();
-    const buyerFeeTotal = getBuyerFee();
-    const sellerFeeTotal = getSellerFee();
-
-    const getAmount = (key) => {
-      const payer = feePayer[key];
-      if (!payer) return 0;
-      return toNumber(fees[key][payer] || 0);
-    };
-
-    const feeResponsibility = {};
-    feeTypes.forEach((key) => {
-      if (feePayer[key] === "buyer" || feePayer[key] === "seller") {
-        feeResponsibility[key] = feePayer[key];
-      }
-    });
-
-    const email = buildEmailFor(aud);
-
+  /* =========================================================
+   * API: GỬI DRAFT MAIL CHO 1 BÊN (BUYER / SELLER)
+   * - Endpoint: POST /staff/contracts/send-draft
+   * - Body: { contractId, audience: "buyer" | "seller" }
+   * - Trả về: object có field message (ví dụ trong Swagger)
+   * =======================================================*/
+  const sendDraftOne = async (audience) => {
     const payload = {
       contractId: recordData.id,
-      audience: aud,
-
-      agreedPrice: price,
-      buyerFeeTotal,
-      sellerFeeTotal,
-      feeResponsibility,
-
-      brokerageFee: getAmount("brokerageFee"),
-      titleTransferFee: getAmount("titleTransferFee"),
-      legalAndConditionCheckFee: getAmount("legalAndConditionCheckFee"),
-      adminProcessingFee: getAmount("adminProcessingFee"),
-      reinspectionOrRegistrationSupportFee: getAmount("reinspectionOrRegistrationSupportFee"),
-
-      toRole: email.toRole,
-      subject: email.subject,
-      text: email.text,
-      html: email.html,
-      ctaUrl: email.ctaUrl,
-      sendMode: "html+text",
-      contentType: "text/html",
+      audience, // "buyer" hoặc "seller"
     };
 
-    const res = await api.post(SEND_DRAFT, payload);
-    return res;
+    // Trả về full response để bên ngoài lấy res.data.message
+    return api.post(SEND_DRAFT, payload);
   };
 
-  /* ===== OTP & Finalize ===== */
+  /* =========================================================
+   * API: GỬI OTP
+   * - GẮN VỚI NÚT "Gửi OTP" TRONG BOX "Bước tiếp theo"
+   * - Endpoint: POST /staff/contracts/send-otp
+   * - Body: { contractId }
+   * - Backend trả về message (hiện tại là tiếng Anh trong Swagger)
+   * =======================================================*/
   const handleSendOtpCode = async () => {
     if (!recordData?.id) return;
+
     setOtpSending(true);
     try {
-      const res = await api.post(SEND_OTP_PATH, { contractId: recordData.id });
+      // GỌI API OTP
+      const res = await api.post(SEND_OTP_PATH, {
+        contractId: recordData.id,
+      });
+
       setOtpSent(true);
-      setToast({ type: "success", message: res?.data?.message || "Đã gửi OTP" });
+
+      // Ưu tiên lấy message từ backend, nếu không có thì fallback tiếng Việt
+      setToast({
+        type: "success",
+        message: res?.data?.message || "Đã gửi OTP",
+      });
     } catch (error) {
+      // Lấy message lỗi backend, nếu không có thì dùng message mặc định
       setToast({
         type: "error",
         message: error?.response?.data?.message || "Gửi OTP thất bại",
@@ -403,67 +343,123 @@ export default function TransactionDetail() {
     }
   };
 
-  // Cách A: FINALIZE trước, rồi SEND-DRAFT hai bên
+  /* =========================================================
+   * NÚT: "Finalize & Gửi cho cả hai bên"
+   * FLOW NGHIỆP VỤ:
+   *   B1: Validate contractId, giá xe, phí
+   *   B2: Gọi API FINALIZE để lưu agreedPrice + phí vào DB
+   *   B3: Gọi API SEND-DRAFT cho cả buyer & seller (Promise.all)
+   *   B4: Đọc message từ response API (ưu tiên sellerRes.data.message)
+   *   B5: Cập nhật state đã gửi & hiển thị Toast
+   * =======================================================*/
   const handleSendRecordToBoth = async () => {
+    // Bảo vệ: thiếu contractId thì không làm gì
     if (!recordData?.id) {
       setToast({ type: "error", message: "Thiếu contractId" });
       return;
     }
+
     const price = getCarPrice();
     if (price <= 0) {
       setToast({ type: "error", message: "Giá trị xe không hợp lệ" });
       return;
     }
+
+    // Validate phí trước khi gửi
     if (!validateFees()) return;
 
     try {
+      // Bật trạng thái loading cho 3 action
       setBuyerSending(true);
       setSellerSending(true);
       setFinalSending(true);
 
-      // 1) FINALIZE vào DB
+      // B1: Gọi API FINALIZE để lưu dữ liệu vào DB
       const finalizePayload = buildFinalizePayload();
-      await api.post(FINALIZE, finalizePayload);
+      await api.post(FINALIZE, finalizePayload); // <-- GỌI API /finalize
 
-      // 2) SEND-DRAFT hai bên (email có đủ phí nhờ payload +/hoặc DB)
-      await Promise.all([sendDraftOne("buyer"), sendDraftOne("seller")]);
+      // B2: Gọi API SEND-DRAFT cho cả buyer & seller song song
+      const [buyerRes, sellerRes] = await Promise.all([
+        sendDraftOne("buyer"), // <-- POST /send-draft audience="buyer"
+        sendDraftOne("seller"), // <-- POST /send-draft audience="seller"
+      ]);
 
+      // B3: Đánh dấu state đã gửi cho 2 bên
       setBuyerRecordSent(true);
       setSellerRecordSent(true);
-      setToast({ type: "success", message: "Đã finalize & gửi hồ sơ cho cả hai bên" });
+
+      // B4: Lấy message từ backend:
+      //     Ưu tiên sellerRes.data.message -> buyerRes.data.message -> fallback
+      const apiMessage =
+        sellerRes?.data?.message ||
+        buyerRes?.data?.message ||
+        "Draft hợp đồng đã được gửi cho buyer và seller.";
+
+      // B5: Hiện Toast với message lấy từ API (giống Swagger)
+      setToast({
+        type: "success",
+        message: apiMessage,
+      });
     } catch (error) {
+      // Xử lý lỗi chung cho finalize hoặc send-draft
+      const errMsg =
+        error?.response?.data?.message ||
+        "Gửi hồ sơ thất bại. Vui lòng thử lại.";
       setToast({
         type: "error",
-        message: error?.response?.data?.message || "Gửi hồ sơ thất bại",
+        message: errMsg,
       });
     } finally {
+      // Tắt loading ở 3 nút
       setBuyerSending(false);
       setSellerSending(false);
       setFinalSending(false);
     }
   };
 
+  /* =========================================================
+   * NÚT: "Hoàn tất hợp đồng"
+   * - Chỉ gọi FINALIZE để lưu agreedPrice + phí
+   * - KHÔNG gửi email draft cho buyer/seller
+   * - Dùng trong trường hợp staff muốn lưu trước, gửi mail sau
+   * =======================================================*/
   const handleFinalize = async () => {
     const price2 = getCarPrice();
     if (!recordData?.id) return;
+
     if (price2 <= 0) {
       setToast({ type: "error", message: "Giá trị xe không hợp lệ" });
       return;
     }
+
     if (!validateFees()) return;
 
     setFinalSending(true);
     try {
+      // Build payload giống như handleSendRecordToBoth
       const payload = buildFinalizePayload();
+
+      // GỌI API FINALIZE, chỉ lưu DB
       const res = await api.post(FINALIZE, payload);
-      setToast({ type: "success", message: res?.data?.message || "Hoàn tất giao dịch!" });
+
+      // Ưu tiên dùng message từ backend, nếu không có thì fallback
+      setToast({
+        type: "success",
+        message: res?.data?.message || "Hoàn tất giao dịch!",
+      });
     } catch (error) {
-      setToast({ type: "error", message: error?.response?.data?.message || "Lỗi hoàn tất" });
+      setToast({
+        type: "error",
+        message: error?.response?.data?.message || "Lỗi hoàn tất",
+      });
     } finally {
       setFinalSending(false);
     }
   };
 
+  /* =========================================================
+   * TRƯỜNG HỢP MỞ TRANG THẲNG MÀ KHÔNG CÓ recordData
+   * =======================================================*/
   if (!recordData) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -484,10 +480,14 @@ export default function TransactionDetail() {
     );
   }
 
+  // Khi đã gửi hồ sơ cho 1 bên, ẩn chi tiết tiền của bên còn lại
   const maskText = "— ẩn sau khi gửi —";
   const hideBuyerDetails = sellerRecordSent;
   const hideSellerDetails = buyerRecordSent;
 
+  /* =========================================================
+   * UI CHÍNH
+   * =======================================================*/
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminHeader />
@@ -495,7 +495,7 @@ export default function TransactionDetail() {
         <AdminSidebar />
         <main className="flex-1 py-8 px-6">
           <div className="max-w-7xl mx-auto">
-            {/* Header */}
+            {/* ================= HEADER ================ */}
             <div className="mb-6">
               <button
                 onClick={() => navigate("/transactionrecords")}
@@ -504,17 +504,22 @@ export default function TransactionDetail() {
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 Quay lại
               </button>
-              <h1 className="text-3xl font-bold">Chi tiết hồ sơ - {recordData.id}</h1>
-              <p className="text-gray-600 mt-2">Chọn bên chịu phí và nhập giá trị</p>
+              <h1 className="text-3xl font-bold">
+                Chi tiết hồ sơ - {recordData.id}
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Chọn bên chịu phí và nhập giá trị
+              </p>
             </div>
 
-            {/* Chốt giá */}
+            {/* ============== BOX CHỐT GIÁ ============== */}
             <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg shadow-sm border-2 border-yellow-300 p-6 mb-6">
               <h2 className="text-xl font-semibold mb-4 flex items-center">
                 <DollarSign className="w-6 h-6 mr-2 text-yellow-600" />
                 Chốt giá trị xe
               </h2>
 
+              {/* Mode xem (không chỉnh sửa) */}
               {!isEditingPrice ? (
                 <div className="flex items-center justify-between">
                   <div>
@@ -532,7 +537,7 @@ export default function TransactionDetail() {
                     )}
                   </div>
 
-                  {/* Nút chỉ mở form nhập, KHÔNG tự set giá */}
+                  {/* Nút vàng: Chốt giá / Sửa giá */}
                   <button
                     onClick={() => {
                       const priceNow = getCarPrice();
@@ -546,15 +551,19 @@ export default function TransactionDetail() {
                   </button>
                 </div>
               ) : (
+                // Mode chỉnh sửa giá
                 <div className="flex gap-3 items-start">
                   <input
                     type="text"
                     inputMode="numeric"
                     value={carPriceInput}
-                    onChange={(e) => setCarPriceInput(onlyDigits(e.target.value))}
+                    onChange={(e) =>
+                      setCarPriceInput(onlyDigits(e.target.value))
+                    }
                     className="flex-1 px-4 py-3 border-2 border-yellow-400 rounded-lg text-lg"
                     placeholder="Nhập giá (VNĐ)"
                   />
+                  {/* Nút xanh lá: Xác nhận */}
                   <button
                     onClick={handleConfirmPrice}
                     className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 flex items-center gap-2"
@@ -562,6 +571,7 @@ export default function TransactionDetail() {
                     <CheckCircle className="w-5 h-5" />
                     Xác nhận
                   </button>
+                  {/* Nút xám: Hủy */}
                   <button
                     onClick={() => {
                       setCarPriceInput("");
@@ -575,22 +585,28 @@ export default function TransactionDetail() {
               )}
             </div>
 
-            {/* Phí - 2 bảng */}
+            {/* ========== 2 BẢNG BUYER / SELLER ========== */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Buyer */}
+              {/* -------- BUYER -------- */}
               <div className="bg-white rounded-lg shadow-sm border border-blue-200 overflow-hidden">
                 <div className="bg-blue-50 px-6 py-4 border-b border-blue-200">
                   <div className="flex items-center">
                     <User className="w-6 h-6 text-blue-600 mr-3" />
                     <div>
-                      <h3 className="text-lg font-semibold">Người Mua (User A)</h3>
-                      <p className="text-sm text-gray-600">{recordData.buyerName}</p>
+                      <h3 className="text-lg font-semibold">
+                        Người Mua (User A)
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {recordData.buyerName}
+                      </p>
                     </div>
                   </div>
                 </div>
+
                 <div className="p-6 space-y-4">
                   {feeTypes.map((key) => (
                     <div key={key} className="flex items-center gap-3">
+                      {/* Checkbox chọn Buyer chịu phí */}
                       <input
                         type="checkbox"
                         checked={feePayer[key] === "buyer"}
@@ -600,11 +616,14 @@ export default function TransactionDetail() {
                       <label className="flex-1 text-sm font-medium text-gray-700">
                         {feeLabels[key]}
                       </label>
+                      {/* Input số tiền Buyer chịu */}
                       <input
                         type="text"
                         inputMode="numeric"
                         value={fees[key].buyer}
-                        onChange={(e) => handleFeeChange(key, "buyer", e.target.value)}
+                        onChange={(e) =>
+                          handleFeeChange(key, "buyer", e.target.value)
+                        }
                         disabled={feePayer[key] !== "buyer"}
                         placeholder={feePayer[key] === "buyer" ? "0" : "—"}
                         className={`w-32 px-3 py-2 text-right border rounded-lg font-medium transition-colors ${
@@ -615,6 +634,8 @@ export default function TransactionDetail() {
                       />
                     </div>
                   ))}
+
+                  {/* Box tổng kết Buyer */}
                   <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                     <p className="text-sm text-gray-600 mb-2">
                       Giá trị xe:{" "}
@@ -625,37 +646,51 @@ export default function TransactionDetail() {
                     <p className="text-sm text-gray-600">
                       Tổng phí Buyer:{" "}
                       <span className="font-semibold text-blue-600 text-lg">
-                        {hideBuyerDetails ? maskText : `${formatCurrency(getBuyerFee())} VNĐ`}
+                        {hideBuyerDetails
+                          ? maskText
+                          : `${formatCurrency(getBuyerFee())} VNĐ`}
                       </span>
                     </p>
                   </div>
+
+                  {/* Tổng thanh toán Buyer = giá xe + tổng phí Buyer */}
                   <div className="pt-4 border-t border-gray-200">
                     <div className="flex justify-between items-center">
-                      <span className="text-lg font-semibold">Tổng thanh toán:</span>
+                      <span className="text-lg font-semibold">
+                        Tổng thanh toán:
+                      </span>
                       <span className="text-xl font-bold text-blue-600">
                         {hideBuyerDetails
                           ? maskText
-                          : `${formatCurrency(getCarPrice() + getBuyerFee())} VNĐ`}
+                          : `${formatCurrency(
+                              getCarPrice() + getBuyerFee()
+                            )} VNĐ`}
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Seller */}
+              {/* -------- SELLER -------- */}
               <div className="bg-white rounded-lg shadow-sm border border-green-200 overflow-hidden">
                 <div className="bg-green-50 px-6 py-4 border-b border-green-200">
                   <div className="flex items-center">
                     <User className="w-6 h-6 text-green-600 mr-3" />
                     <div>
-                      <h3 className="text-lg font-semibold">Người Bán (User B)</h3>
-                      <p className="text-sm text-gray-600">{recordData.sellerName}</p>
+                      <h3 className="text-lg font-semibold">
+                        Người Bán (User B)
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {recordData.sellerName}
+                      </p>
                     </div>
                   </div>
                 </div>
+
                 <div className="p-6 space-y-4">
                   {feeTypes.map((key) => (
                     <div key={key} className="flex items-center gap-3">
+                      {/* Checkbox chọn Seller chịu phí */}
                       <input
                         type="checkbox"
                         checked={feePayer[key] === "seller"}
@@ -665,11 +700,14 @@ export default function TransactionDetail() {
                       <label className="flex-1 text-sm font-medium text-gray-700">
                         {feeLabels[key]}
                       </label>
+                      {/* Input số tiền Seller chịu */}
                       <input
                         type="text"
                         inputMode="numeric"
                         value={fees[key].seller}
-                        onChange={(e) => handleFeeChange(key, "seller", e.target.value)}
+                        onChange={(e) =>
+                          handleFeeChange(key, "seller", e.target.value)
+                        }
                         disabled={feePayer[key] !== "seller"}
                         placeholder={feePayer[key] === "seller" ? "0" : "—"}
                         className={`w-32 px-3 py-2 text-right border rounded-lg font-medium transition-colors ${
@@ -680,6 +718,8 @@ export default function TransactionDetail() {
                       />
                     </div>
                   ))}
+
+                  {/* Box tổng kết Seller */}
                   <div className="mt-6 p-4 bg-green-50 rounded-lg">
                     <p className="text-sm text-gray-600 mb-2">
                       Giá trị xe:{" "}
@@ -690,17 +730,25 @@ export default function TransactionDetail() {
                     <p className="text-sm text-gray-600">
                       Tổng phí Seller:{" "}
                       <span className="font-semibold text-green-600 text-lg">
-                        {hideSellerDetails ? maskText : `${formatCurrency(getSellerFee())} VNĐ`}
+                        {hideSellerDetails
+                          ? maskText
+                          : `${formatCurrency(getSellerFee())} VNĐ`}
                       </span>
                     </p>
                   </div>
+
+                  {/* Tổng nhận được Seller = giá xe - tổng phí Seller */}
                   <div className="pt-4 border-t border-gray-200">
                     <div className="flex justify-between items-center">
-                      <span className="text-lg font-semibold">Tổng nhận được:</span>
+                      <span className="text-lg font-semibold">
+                        Tổng nhận được:
+                      </span>
                       <span className="text-xl font-bold text-green-600">
                         {hideSellerDetails
                           ? maskText
-                          : `${formatCurrency(getCarPrice() - getSellerFee())} VNĐ`}
+                          : `${formatCurrency(
+                              getCarPrice() - getSellerFee()
+                            )} VNĐ`}
                       </span>
                     </div>
                   </div>
@@ -708,9 +756,11 @@ export default function TransactionDetail() {
               </div>
             </div>
 
-            {/* Gửi hồ sơ */}
+            {/* ============== BOX GỬI HỒ SƠ ============== */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
               <h3 className="text-lg font-semibold mb-4">Gửi hồ sơ xác nhận</h3>
+
+              {/* Thông báo nhỏ khi đã gửi hồ sơ cho 1 hoặc 2 bên */}
               {(buyerRecordSent || sellerRecordSent) && (
                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 font-medium flex items-center gap-2">
                   <CheckCircle className="w-5 h-5" />
@@ -721,9 +771,15 @@ export default function TransactionDetail() {
                     : "Đã gửi cho Seller"}
                 </div>
               )}
+
+              {/* Nút lớn: Finalize & Gửi cho cả hai bên */}
               <button
                 onClick={handleSendRecordToBoth}
-                disabled={(buyerRecordSent && sellerRecordSent) || buyerSending || sellerSending}
+                disabled={
+                  (buyerRecordSent && sellerRecordSent) ||
+                  buyerSending ||
+                  sellerSending
+                }
                 className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-lg font-medium text-lg transition-all ${
                   buyerRecordSent && sellerRecordSent
                     ? "bg-gray-300 text-gray-500"
@@ -741,14 +797,18 @@ export default function TransactionDetail() {
               </button>
             </div>
 
-            {/* Bước tiếp theo */}
+            {/* ============ BOX BƯỚC TIẾP THEO ============ */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold">Bước tiếp theo</h3>
-                  <p className="text-sm text-gray-600 mt-1">Gửi OTP bất kỳ lúc nào</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Gửi OTP bất kỳ lúc nào
+                  </p>
                 </div>
+
                 <div className="flex gap-3">
+                  {/* Nút Gửi OTP: gắn handleSendOtpCode */}
                   <button
                     onClick={handleSendOtpCode}
                     disabled={otpSent || otpSending}
@@ -761,8 +821,14 @@ export default function TransactionDetail() {
                     }`}
                   >
                     <Send className="w-5 h-5" />
-                    {otpSent ? "Đã gửi OTP" : otpSending ? "Đang gửi..." : "Gửi OTP"}
+                    {otpSent
+                      ? "Đã gửi OTP"
+                      : otpSending
+                      ? "Đang gửi..."
+                      : "Gửi OTP"}
                   </button>
+
+                  {/* Nút Hoàn tất hợp đồng: gắn handleFinalize */}
                   <button
                     onClick={handleFinalize}
                     disabled={finalSending}
@@ -782,7 +848,14 @@ export default function TransactionDetail() {
         </main>
       </div>
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {/* ============ TOAST HIỂN THỊ THÔNG BÁO ============ */}
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }
