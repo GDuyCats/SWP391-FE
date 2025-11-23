@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useLocation, Link } from "react-router-dom";
+import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { api } from "../../services/api";
+import Toast from "../../components/Toast";
 
 function BatteryDetails() {
   const { id } = useParams();
   const { state } = useLocation();
+  const navigate = useNavigate();
   const [post, setPost] = useState(state?.post || null);
   const [loading, setLoading] = useState(!state?.post);
+  const [msg, setMsg] = useState("");
+  const [toast, setToast] = useState(false);
+  const [type, setType] = useState("");
 
   const getVipTierInfo = (vipTier) => {
     const tiers = {
@@ -64,6 +69,48 @@ function BatteryDetails() {
       currency: "VND",
     });
   };
+
+  async function handleRequest() {
+    console.log(id);
+
+    try {
+      const res = await api.post("/PurchaseRequests", {
+        postId: id,
+        message: "Tôi muốn mua pin này",
+      });
+      console.log(res);
+      if (res.status === 201) {
+        setToast(true);
+        setType("success");
+        setMsg(res.data.message);
+      }
+    } catch (error) {
+      console.log(error);
+      const status = error?.status;
+      const msg = error?.response?.data?.message;
+      let errorMsg = "Không thể yêu cầu mua pin";
+
+      setToast(true);
+      setType("error");
+      if (status === 400) {
+        errorMsg = msg ? msg : "Bài đăng chưa được xác thực";
+      } else if (status === 403) {
+        errorMsg = msg ? msg : "Không đủ quyền (Admin/Staff không được phép)";
+      } else if (status === 404) {
+        errorMsg = msg ? msg : "Không tìm thấy bài đăng";
+      } else if (status === 409) {
+        errorMsg = msg
+          ? msg
+          : "Người mua đã có hợp đồng đang hiệu lực cho bài này";
+      } else if (status === 500) {
+        errorMsg = msg ? msg : "Lỗi máy chủ";
+        setTimeout(() => navigate("/login"), 2000);
+      }
+      setMsg(errorMsg);
+    } finally {
+      setTimeout(() => setToast(false), 3000);
+    }
+  }
 
   if (loading) {
     return (
@@ -281,12 +328,12 @@ function BatteryDetails() {
                     </div>
 
                     {/* Nút hành động */}
-                    <div className="flex gap-4 pt-6">
-                      <button className="flex-1 bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors font-medium">
+                    <div className="pt-6">
+                      <button 
+                        onClick={handleRequest}
+                        className="w-full bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors font-medium"
+                      >
                         Gửi yêu cầu mua pin
-                      </button>
-                      <button className="flex-1 border-2 border-gray-300 text-gray-900 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium">
-                        Liên hệ người bán
                       </button>
                     </div>
                   </div>
@@ -314,6 +361,7 @@ function BatteryDetails() {
         </div>
       </main>
       <Footer />
+      {toast && <Toast msg={msg} type={type} />}
     </div>
   );
 }
