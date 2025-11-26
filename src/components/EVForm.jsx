@@ -16,7 +16,7 @@ import {
 
 /**
  * Component EVForm - Form đăng bài bán Xe Điện
- * 
+ *
  * Chức năng:
  * - Cho phép người dùng nhập thông tin xe điện để đăng bán
  * - Upload hình ảnh xe
@@ -24,7 +24,7 @@ import {
  * - Validate dữ liệu đầu vào
  * - Gọi API tạo bài đăng
  * - Navigate đến trang chọn gói VIP sau khi tạo bài thành công
- * 
+ *
  * Flow:
  * 1. User nhập thông tin xe + có thể check "Bài đăng kèm pin" để nhập thêm thông tin pin
  * 2. User upload ảnh xe
@@ -35,17 +35,17 @@ import {
  */
 export default function EVForm() {
   const navigate = useNavigate();
-  
+
   // ============ STATE MANAGEMENT ============
-  
+
   // State cho upload ảnh
   const [imageFiles, setImageFiles] = useState([]); // Array các file ảnh gốc
   const [thumbnailFile, setThumbnailFile] = useState(null); // File thumbnail (ảnh đầu tiên)
   const [imagesPreview, setImagesPreview] = useState([]); // Array URL preview ảnh
-  
+
   // State cho Toast notification
   const [toast, setToast] = useState(null); // {msg: string, type: 'success'|'error'}
-  
+
   // State cho loading và validation
   const [loading, setLoading] = useState(false); // Trạng thái đang submit form
   const [errors, setErrors] = useState({}); // Object chứa lỗi validation cho từng field
@@ -53,51 +53,51 @@ export default function EVForm() {
   // State cho form data - chứa tất cả thông tin xe điện
   const [formData, setFormData] = useState({
     // Thông tin cơ bản xe
-    title: "",              // Tiêu đề bài đăng
-    phone: "",              // SĐT liên hệ
-    brand: "",              // Hãng xe (VD: Tesla, VinFast)
-    model: "",              // Dòng xe (VD: Model 3, VF e34)
-    year: "",               // Năm sản xuất
-    mileage: "",            // Số km đã đi
-    condition: "",          // Tình trạng (Mới/Đã qua sử dụng)
-    price: "",              // Giá bán
-    content: "",            // Mô tả chi tiết
-    
+    title: "", // Tiêu đề bài đăng
+    phone: "", // SĐT liên hệ
+    brand: "", // Hãng xe (VD: Tesla, VinFast)
+    model: "", // Dòng xe (VD: Model 3, VF e34)
+    year: "", // Năm sản xuất
+    mileage: "", // Số km đã đi
+    condition: "", // Tình trạng (Mới/Đã qua sử dụng)
+    price: "", // Giá bán
+    content: "", // Mô tả chi tiết
+
     // Checkbox đăng kèm pin - nếu true thì các field bên dưới mới được validate và gửi lên
     hasBattery: false,
-    
+
     // Các trường thông tin pin (chỉ gửi khi hasBattery=true)
-    battery_brand: "",      // Thương hiệu pin
-    battery_model: "",      // Model pin
-    battery_capacity: "",   // Dung lượng pin
-    battery_type: "",       // Loại pin (optional)
-    battery_range: "",      // Tầm hoạt động (optional)
-    battery_condition: "",  // Tình trạng pin (optional)
-    charging_time: "",      // Thời gian sạc (optional)
-    compatible_models: "",  // Các dòng xe tương thích (optional)
+    battery_brand: "", // Thương hiệu pin
+    battery_model: "", // Model pin
+    battery_capacity: "", // Dung lượng pin
+    battery_type: "", // Loại pin (optional)
+    battery_range: "", // Tầm hoạt động (optional)
+    battery_condition: "", // Tình trạng pin (optional)
+    charging_time: "", // Thời gian sạc (optional)
+    compatible_models: "", // Các dòng xe tương thích (optional)
   });
 
   // ============ EVENT HANDLERS ============
-  
+
   /**
    * Hàm xử lý khi người dùng upload ảnh xe
    * - Thêm files vào imageFiles array
    * - Tạo preview URL cho từng ảnh
    * - Set ảnh đầu tiên làm thumbnail nếu chưa có
-   * 
+   *
    * @param {Event} e - Event object từ input file
    */
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-    
+
     // Thêm files mới vào array imageFiles
     setImageFiles((prev) => [...prev, ...files]);
-    
+
     // Tạo URL preview cho từng ảnh (để hiển thị trước khi upload)
     const imageUrls = files.map((file) => URL.createObjectURL(file));
     setImagesPreview((prev) => [...prev, ...imageUrls]);
-    
+
     // Set ảnh đầu tiên làm thumbnail nếu chưa có thumbnail
     if (!thumbnailFile && files[0]) {
       setThumbnailFile(files[0]);
@@ -110,7 +110,8 @@ export default function EVForm() {
    * - Xử lý checkbox (hasBattery)
    * - Xóa error message nếu có
    * - Tự động xóa khoảng trống cho số điện thoại
-   * 
+   * - Giới hạn giá bán tối đa 12 số
+   *
    * @param {Event} e - Event object từ input/checkbox
    */
   const handleChange = (e) => {
@@ -120,6 +121,12 @@ export default function EVForm() {
     let processedValue = value;
     if (name === "phone" && type !== "checkbox") {
       processedValue = value.replace(/\s/g, ""); // Xóa tất cả khoảng trắng
+    }
+
+    // Giới hạn giá bán tối đa 12 số
+    if (name === "price" && type !== "checkbox") {
+      // Chỉ cho phép nhập số và giới hạn 12 ký tự
+      processedValue = value.replace(/\D/g, "").slice(0, 12);
     }
 
     // Cập nhật formData
@@ -137,7 +144,7 @@ export default function EVForm() {
 
   /**
    * Hàm xử lý khi user submit form (click "Tiếp tục")
-   * 
+   *
    * Flow:
    * 1. Kiểm tra có ảnh hay chưa
    * 2. Validate thông tin xe (bắt buộc)
@@ -145,7 +152,7 @@ export default function EVForm() {
    * 4. Nếu có lỗi: hiển thị lỗi và scroll đến field lỗi đầu tiên
    * 5. Nếu hợp lệ: gọi API tạo bài đăng
    * 6. Nếu thành công: chuyển đến trang chọn gói VIP
-   * 
+   *
    * @param {Event} e - Submit event
    */
   const handleContinue = async (e) => {
@@ -201,7 +208,7 @@ export default function EVForm() {
 
     // Thực hiện validate toàn bộ form
     const validation = validateForm(validations);
-    
+
     // ===== BƯỚC 4: Xử lý nếu có lỗi validation =====
     if (!validation.isValid) {
       setErrors(validation.errors);
@@ -225,13 +232,13 @@ export default function EVForm() {
     try {
       // Tạo FormData để gửi cả text và files
       const data = new FormData();
-      
+
       // Thêm thông tin cơ bản
       data.append("title", formData.title);
       data.append("phone", formData.phone);
       data.append("content", formData.content);
       data.append("price", formData.price);
-      data.append("category", "vehicle");        // Category là "vehicle" (xe điện)
+      data.append("category", "vehicle"); // Category là "vehicle" (xe điện)
       data.append("hasBattery", formData.hasBattery ? "1" : "0"); // Flag đánh dấu có đăng kèm pin
 
       // Thêm thông tin xe
@@ -247,7 +254,7 @@ export default function EVForm() {
         data.append("battery_brand", formData.battery_brand);
         data.append("battery_model", formData.battery_model);
         data.append("battery_capacity", formData.battery_capacity);
-        
+
         // Các fields optional - chỉ gửi nếu user có nhập
         if (formData.battery_type)
           data.append("battery_type", formData.battery_type);
@@ -262,7 +269,7 @@ export default function EVForm() {
       }
 
       // Thêm files ảnh
-      data.append("thumbnailFile", ensuredThumb);           // Ảnh thumbnail
+      data.append("thumbnailFile", ensuredThumb); // Ảnh thumbnail
       imageFiles.forEach((f) => data.append("imageFiles", f)); // Các ảnh còn lại
 
       console.log("[DEBUG] Gọi API /create với FormData");
@@ -294,10 +301,10 @@ export default function EVForm() {
         setToast(null);
         navigate("/listing/package", {
           state: {
-            postId: postId,           // ID bài đăng vừa tạo
-            type: "ev",               // Loại bài đăng
-            ...formData,              // Spread toàn bộ form data
-            images: imagesPreview,    // Preview images
+            postId: postId, // ID bài đăng vừa tạo
+            type: "ev", // Loại bài đăng
+            ...formData, // Spread toàn bộ form data
+            images: imagesPreview, // Preview images
           },
         });
       }, 1200);
@@ -317,14 +324,12 @@ export default function EVForm() {
   return (
     <div className="bg-gray-50 min-h-screen text-gray-800 flex flex-col items-center py-10 px-6">
       <div className="w-full max-w-5xl bg-white p-8 rounded-2xl shadow-lg border border-gray-200">
-        
         {/* ===== TIÊU ĐỀ ===== */}
         <h1 className="text-2xl font-semibold mb-6 text-center">
           Thông tin xe điện
         </h1>
 
         <form onSubmit={handleContinue}>
-          
           {/* ===== SECTION 1: Thông tin cơ bản xe ===== */}
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4 border-b border-gray-300 pb-2">
@@ -492,21 +497,21 @@ export default function EVForm() {
             <h2 className="text-xl font-semibold mb-4 border-b border-gray-300 pb-2">
               Hình ảnh xe
             </h2>
-            
+
             {/* Button upload ảnh - input file ẩn, trigger bằng label */}
             <div className="flex items-center gap-4 mb-4">
               <label className="flex items-center gap-2 cursor-pointer bg-gray-800 hover:bg-gray-900 px-4 py-2 rounded-lg transition text-white">
                 <Upload className="w-5 h-5" /> Tải hình ảnh
                 <input
                   type="file"
-                  multiple          // Cho phép chọn nhiều ảnh
+                  multiple // Cho phép chọn nhiều ảnh
                   className="hidden" // Ẩn input, dùng label để trigger
                   onChange={handleImageUpload}
-                  accept="image/*"  // Chỉ chấp nhận file ảnh
+                  accept="image/*" // Chỉ chấp nhận file ảnh
                 />
               </label>
             </div>
-            
+
             {/* Grid hiển thị preview các ảnh đã upload */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {imagesPreview.map((src, index) => (
@@ -578,7 +583,7 @@ export default function EVForm() {
             >
               <ArrowLeft size={18} /> Quay lại
             </button>
-            
+
             {/* Nút Submit - tiếp tục đến chọn gói VIP */}
             <button
               type="submit"
