@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
-  X, FileText, User, Tag, DollarSign, Calendar, MessageSquare, Star
+  X, FileText, User, Tag, DollarSign, Calendar, MessageSquare, Star,
+  Car, Package, Gauge, Battery, BatteryCharging, Layers
 } from "lucide-react";
 import { PhotoProvider, PhotoView } from "react-photo-view";
 import { api } from "../services/api";
@@ -14,7 +15,7 @@ export default function PostDetailDialog({ open, onClose, postId }) {
   const [toast, setToast] = useState(false);
   const [type, setType] = useState("");
   const [msg, setMsg] = useState("");
-  const [id, setId] = useState(0);
+  // const [id, setId] = useState(0);
 
   // Hàm render cấp VIP
   const renderVipTier = (tier) => {
@@ -204,6 +205,83 @@ export default function PostDetailDialog({ open, onClose, postId }) {
               </div>
             </div>
 
+            {post.vehicleDetail && (
+              <div className="border-t pt-4 space-y-4">
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  {/* <Car className="w-5 h-5 text-blue-600" /> */}
+                  Thông tin xe chi tiết
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                  {/* Thương hiệu */}
+                  <div className="flex items-center gap-3">
+                    <Car className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm text-gray-500">Thương hiệu</p>
+                      <p className="font-medium text-gray-800">{post.vehicleDetail.brand}</p>
+                    </div>
+                  </div>
+
+                  {/* Dòng xe */}
+                  <div className="flex items-center gap-3">
+                    <Package className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm text-gray-500">Dòng xe</p>
+                      <p className="font-medium text-gray-800">{post.vehicleDetail.model}</p>
+                    </div>
+                  </div>
+
+                  {/* Tình trạng */}
+                  <div className="flex items-center gap-3">
+                    <Layers className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm text-gray-500">Tình trạng</p>
+                      <p className="font-medium text-gray-800">{post.vehicleDetail.condition}</p>
+                    </div>
+                  </div>
+
+                  {/* Số km đã chạy */}
+                  <div className="flex items-center gap-3">
+                    <Gauge className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm text-gray-500">Số km đã chạy</p>
+                      <p className="font-medium text-gray-800">
+                        {post.vehicleDetail.mileage?.toLocaleString("vi-VN")} km
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Tình trạng pin */}
+                  <div className="flex items-center gap-3">
+                    <BatteryCharging className="w-5 h-5 text-green-600" />
+                    <div>
+                      <p className="text-sm text-gray-500">Tình trạng pin</p>
+                      <p className="font-medium text-gray-800">{post.vehicleDetail.battery_condition}</p>
+                    </div>
+                  </div>
+
+                  {/* Model pin */}
+                  <div className="flex items-center gap-3">
+                    <Battery className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm text-gray-500">Model pin</p>
+                      <p className="font-medium text-gray-800">{post.vehicleDetail.battery_model}</p>
+                    </div>
+                  </div>
+
+                  {/* Loại pin */}
+                  <div className="flex items-center gap-3">
+                    <Battery className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm text-gray-500">Loại pin</p>
+                      <p className="font-medium text-gray-800">{post.vehicleDetail.battery_type}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Mô tả */}
             {post.content && (
               <div className="border-t pt-4">
@@ -245,9 +323,9 @@ export default function PostDetailDialog({ open, onClose, postId }) {
               )}
             </PhotoProvider>
 
-              {/* Trạng thái */}
-              <div className="border-t pt-4 flex items-center justify-between w-full">
-                <div className="flex items-center">
+            {/* Trạng thái */}
+            <div className="border-t pt-4 flex items-center justify-between w-full">
+              <div className="flex items-center">
                 <div className="w-5 h-5">
                   {post.verifyStatus === "verify" ? (
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -261,15 +339,15 @@ export default function PostDetailDialog({ open, onClose, postId }) {
                     {post.verifyStatus === "verify" ? "Đã duyệt" : "Chờ duyệt"}
                   </p>
                 </div>
-</div>
-                <div>
-                  <button
-                    onClick={() => handleDelete(post.id)}
-                    className="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600 shadow-sm transition cursor-pointer text-sm"
-                  >
-                    Xóa bài
-                  </button>
-                </div>
+              </div>
+              <div>
+                <button
+                  onClick={() => handleDelete(post.id)}
+                  className="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600 shadow-sm transition cursor-pointer text-sm"
+                >
+                  Xóa bài
+                </button>
+              </div>
 
 
 
