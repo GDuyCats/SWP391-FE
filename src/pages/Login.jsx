@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { api } from "../services/api"; // <— dùng instance
+import { api } from "../services/api";
 import { User, Lock, CheckCircle, XCircle } from "lucide-react";
 import {
   validateUsername,
@@ -8,14 +8,52 @@ import {
   validateForm,
 } from "../utils/validation";
 
+/**
+ * Page Login - Trang đăng nhập
+ *
+ * Route: /login
+ *
+ * Chức năng:
+ * - Form đăng nhập với username và password
+ * - Validation form inputs
+ * - Gọi API đăng nhập
+ * - Lưu user data và token vào localStorage
+ * - Dispatch "userLogin" event để Header cập nhật
+ * - Redirect dựa trên role (admin/staff → /admin, user → /)
+ * - Hiển thị toast từ cookies (verify success/expired/invalid)
+ *
+ * State:
+ * - form: {username, password}
+ * - toast: {type, msg}
+ * - errors: {username, password}
+ *
+ * Flow:
+ * 1. User nhập username + password
+ * 2. Click "Đăng nhập"
+ * 3. Validate inputs
+ * 4. Gọi API POST /login
+ * 5. Lưu user + token vào localStorage
+ * 6. Dispatch userLogin event
+ * 7. Redirect theo role
+ */
 function Login() {
-  const [form, setForm] = useState({ username: "", password: "" });
-  const [toast, setToast] = useState(null);
-  const [toastVisible, setToastVisible] = useState(false);
-  const [errors, setErrors] = useState({ username: "", password: "" });
+  // ============ HOOKS ============
   const location = useLocation();
   const navigate = useNavigate();
 
+  // ============ STATE MANAGEMENT ============
+  const [form, setForm] = useState({ username: "", password: "" });
+  const [toast, setToast] = useState(null); // {type: 'success'|'error', msg: string}
+  const [toastVisible, setToastVisible] = useState(false); // Animation state
+  const [errors, setErrors] = useState({ username: "", password: "" }); // Validation errors
+
+  // ============ HANDLERS ============
+
+  /**
+   * Hàm xử lý khi user thay đổi input
+   * - Cập nhật form state
+   * - Xóa error message khi user bắt đầu sửa
+   */
   const handleChange = (e) => {
     const { id, value } = e.target;
     setForm((prev) => ({ ...prev, [id]: value }));
@@ -26,20 +64,40 @@ function Login() {
     }
   };
 
+  /**
+   * Hàm hiển thị toast notification với animation
+   * @param {string} type - 'success' hoặc 'error'
+   * @param {string} msg - Nội dung thông báo
+   * @param {number} duration - Thời gian hiển thị (ms)
+   */
   const showToast = (type, msg, duration = 3000) => {
     setToast({ type, msg });
     setToastVisible(true);
+    // Fade out animation sau duration
     setTimeout(() => {
       setToastVisible(false);
+      // Remove toast sau animation
       setTimeout(() => setToast(null), 400);
     }, duration);
   };
 
+  // ============ EFFECTS ============
+
+  /**
+   * useEffect: Kiểm tra cookies để hiển thị toast từ email verification
+   * - justVerified: Email verified thành công
+   * - verifyExpired: Link verify đã hết hạn
+   * - verifyInvalid: Link verify không hợp lệ
+   * - alreadyVerified: Account đã được verify trước đó
+   */
   useEffect(() => {
+    // Helper: Kiểm tra cookie có tồn tại không
     const has = (name) =>
       document.cookie.split("; ").some((c) => c.trim().startsWith(`${name}=1`));
+    // Helper: Xóa cookie
     const clear = (name) => (document.cookie = `${name}=; Max-Age=0; path=/`);
 
+    // Kiểm tra từng cookie và hiển thị toast tương ứng
     if (has("justVerified")) {
       showToast("success", "Your account are verified");
       clear("justVerified");
@@ -64,8 +122,27 @@ function Login() {
     }
   }, [location.pathname]);
 
+  /**
+   * Hàm xử lý đăng nhập
+   *
+   * Flow:
+   * 1. Validate username và password
+   * 2. Nếu có lỗi: hiển thị errors
+   * 3. Gọi API POST /login
+   * 4. Lưu user data và accessToken vào localStorage
+   * 5. Dispatch "userLogin" event để Header biết
+   * 6. Redirect theo role:
+   *    - admin/staff → /admin
+   *    - user → /
+   *
+   * Error Handling:
+   * - 403: Account chưa verify email
+   * - 404/405: Username/password sai
+   * - 500: Server error
+   * - Network Error: CORS hoặc API down
+   */
   const handleLogin = async () => {
-    // Validate form
+    // ===== BƯỚC 1: Validate form =====
     const validation = validateForm({
       username: validateUsername(form.username),
       password: validatePassword(form.password),
@@ -77,25 +154,26 @@ function Login() {
     }
 
     try {
+      // ===== BƯỚC 2: Gọi API đăng nhập =====
       const resp = await api.post("/login", {
-        // <— gọi đúng baseURL
         username: form.username,
         password: form.password,
       });
 
       console.log(resp);
 
-      // Store user data and access token from response
+      // ===== BƯỚC 3: Lưu user data và token vào localStorage =====
       if (resp.data.user && resp.data.user.accessToken) {
         localStorage.setItem("user", JSON.stringify(resp.data.user));
         localStorage.setItem("accessToken", resp.data.user.accessToken);
 
-        // Dispatch event to notify Header component
+        // Dispatch event để Header component biết user đã login
         window.dispatchEvent(new Event("userLogin"));
       }
 
       showToast("success", resp.data.message || "Login success");
-      // Redirect based on role: admin -> /admin, others -> /
+
+      // ===== BƯỚC 4: Redirect theo role =====
       const role = resp?.data?.user?.role;
       if (role === "admin" || role === "staff") {
         navigate("/admin");
@@ -103,6 +181,7 @@ function Login() {
         navigate("/");
       }
     } catch (err) {
+      // ===== BƯỚC 5: Xử lý các lỗi =====
       const status = err?.response?.status;
       const msg = err?.response?.data?.message;
 
@@ -125,9 +204,11 @@ function Login() {
     }
   };
 
+  // ============ RENDER UI ============
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      {/* Toast */}
+      {/* ===== TOAST NOTIFICATION ===== */}
+      {/* Positioned fixed ở góc trên phải, có animation slide từ phải */}
       {toast && (
         <div
           className={`fixed top-6 right-6 px-5 py-3 rounded-xl shadow-lg text-white flex items-center gap-3
@@ -139,6 +220,7 @@ function Login() {
             }
             ${toast.type === "success" ? "bg-green-500" : "bg-red-500"}`}
         >
+          {/* Icon success hoặc error */}
           {toast.type === "success" ? (
             <CheckCircle className="w-5 h-5" />
           ) : (
@@ -148,11 +230,11 @@ function Login() {
         </div>
       )}
 
-      {/* Main Container */}
+      {/* ===== MAIN CONTAINER ===== */}
       <div className="w-full max-w-md">
-        {/* Card */}
+        {/* ===== LOGIN CARD ===== */}
         <div className="bg-white rounded-2xl shadow-lg p-8">
-          {/* Logo */}
+          {/* Logo - clickable để về trang chủ */}
           <div className="flex justify-center mb-2">
             <Link
               to="/"
@@ -166,7 +248,7 @@ function Login() {
             </Link>
           </div>
 
-          {/* Title */}
+          {/* Tiêu đề */}
           <h1 className="text-2xl font-bold text-gray-800 text-center mb-2">
             Đăng nhập
           </h1>
@@ -174,9 +256,9 @@ function Login() {
             Điền thông tin bên dưới để đăng nhập
           </p>
 
-          {/* Form */}
+          {/* ===== FORM ===== */}
           <div className="space-y-5">
-            {/* Username Input */}
+            {/* Input: Username */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Tên người dùng
