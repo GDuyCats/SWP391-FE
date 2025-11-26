@@ -1,6 +1,24 @@
 import React from "react";
 
+/**
+ * Component Features - Hiển thị các tính năng/ưu điểm của EVPowerup
+ * 
+ * Chức năng:
+ * - Hiển thị 6 tính năng chính của website
+ * - Mỗi feature có icon, tiêu đề và mô tả
+ * - Layout grid 3 cột responsive
+ * 
+ * Features:
+ * 1. Kiểm định chất lượng
+ * 2. Giá cả hợp lý
+ * 3. Bảo hành uy tín
+ * 4. Hỗ trợ 24/7
+ * 5. Giao hàng nhanh
+ * 6. Bảo mật thông tin
+ */
 const Features = () => {
+  // ============ DATA ============
+  // Mảng chứa tất cả features - mỗi object có icon, title, description
   const features = [
     {
       icon: (
@@ -121,9 +139,12 @@ const Features = () => {
     },
   ];
 
+  // ============ RENDER UI ============
   return (
     <section className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* ===== HEADER - Tiêu đề section ===== */}
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
             Tại sao chọn EVPowerup?
@@ -134,18 +155,26 @@ const Features = () => {
           </p>
         </div>
 
+        {/* ===== FEATURES GRID ===== */}
+        {/* Grid responsive: 1 cột mobile, 2 cột tablet, 3 cột desktop */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Map qua mảng features để render từng feature card */}
           {features.map((feature, index) => (
             <div
               key={index}
               className="text-center p-6 rounded-lg border border-gray-200 hover:shadow-lg transition-shadow"
             >
+              {/* Icon container - circle với background xám */}
               <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full text-gray-900 mb-4">
                 {feature.icon}
               </div>
+              
+              {/* Tiêu đề feature */}
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
                 {feature.title}
               </h3>
+              
+              {/* Mô tả feature */}
               <p className="text-gray-600">{feature.description}</p>
             </div>
           ))}

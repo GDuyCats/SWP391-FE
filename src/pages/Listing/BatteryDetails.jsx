@@ -5,16 +5,48 @@ import Footer from "../../components/Footer";
 import { api } from "../../services/api";
 import Toast from "../../components/Toast";
 
+/**
+ * Page BatteryDetails - Trang chi tiết bài đăng bán Pin
+ *
+ * Route: /listing/battery/:id
+ *
+ * Chức năng:
+ * - Hiển thị chi tiết đầy đủ về pin (ảnh, giá, thông tin kỹ thuật, mô tả)
+ * - Hiển thị VIP badge nếu là bài VIP
+ * - Cho phép gửi yêu cầu mua pin
+ * - Fetch data từ API nếu không có trong location.state
+ *
+ * Data Source:
+ * 1. location.state.post (nếu navigate từ listing với state)
+ * 2. API GET /posts/:id (nếu access trực tiếp URL)
+ *
+ * Flow:
+ * 1. User click vào pin card ở listing → navigate với state
+ * 2. Hiển thị chi tiết pin
+ * 3. User click "Gửi yêu cầu mua pin"
+ * 4. Gọi API POST /PurchaseRequests
+ * 5. Hiển thị toast thành công/lỗi
+ */
 function BatteryDetails() {
-  const { id } = useParams();
-  const { state } = useLocation();
+  // ============ HOOKS ============
+  const { id } = useParams(); // ID từ URL params
+  const { state } = useLocation(); // State truyền từ navigate
   const navigate = useNavigate();
-  const [post, setPost] = useState(state?.post || null);
-  const [loading, setLoading] = useState(!state?.post);
-  const [msg, setMsg] = useState("");
-  const [toast, setToast] = useState(false);
-  const [type, setType] = useState("");
 
+  // ============ STATE MANAGEMENT ============
+  const [post, setPost] = useState(state?.post || null); // Post data
+  const [loading, setLoading] = useState(!state?.post); // Loading nếu không có state
+  const [msg, setMsg] = useState(""); // Toast message
+  const [toast, setToast] = useState(false); // Show/hide toast
+  const [type, setType] = useState(""); // Toast type (success/error)
+
+  // ============ HELPER FUNCTIONS ============
+
+  /**
+   * Hàm lấy thông tin hiển thị cho từng VIP tier
+   * @param {string} vipTier - Loại VIP (silver/gold/diamond)
+   * @returns {object} - Object chứa label, màu sắc, background, border
+   */
   const getVipTierInfo = (vipTier) => {
     const tiers = {
       silver: {
@@ -40,6 +72,13 @@ function BatteryDetails() {
     return tiers[vipTier?.toLowerCase()] || tiers.silver;
   };
 
+  // ============ EFFECTS ============
+
+  /**
+   * useEffect: Fetch post data từ API nếu không có trong state
+   * - Nếu có state.post: sử dụng luôn (navigate từ listing)
+   * - Nếu không có: gọi API GET /posts/:id (access trực tiếp URL)
+   */
   useEffect(() => {
     // Nếu không có dữ liệu từ state, fetch từ API
     if (!post && id) {
@@ -62,6 +101,11 @@ function BatteryDetails() {
     }
   }, [id, post]);
 
+  /**
+   * Hàm format giá tiền sang định dạng VND
+   * @param {number} price - Giá cần format
+   * @returns {string} - Chuỗi giá đã format (VD: "50.000.000 ₫")
+   */
   const formatPrice = (price) => {
     if (!price) return "Liên hệ";
     return Number(price).toLocaleString("vi-VN", {
@@ -70,15 +114,33 @@ function BatteryDetails() {
     });
   };
 
+  /**
+   * Hàm xử lý khi user gửi yêu cầu mua pin
+   *
+   * Flow:
+   * 1. Gọi API POST /PurchaseRequests với postId và message
+   * 2. Nếu thành công (201): hiển thị toast success
+   * 3. Nếu lỗi: hiển thị toast error tương ứng
+   *
+   * Error Handling:
+   * - 400: Bài đăng chưa được xác thực
+   * - 403: Không đủ quyền (Admin/Staff không được phép mua)
+   * - 404: Không tìm thấy bài đăng
+   * - 409: User đã có purchase request active cho bài này
+   * - 500: Lỗi server → redirect login sau 2s
+   */
   async function handleRequest() {
     console.log(id);
 
     try {
+      // Gọi API tạo purchase request
       const res = await api.post("/PurchaseRequests", {
         postId: id,
         message: "Tôi muốn mua pin này",
       });
       console.log(res);
+
+      // Nếu thành công
       if (res.status === 201) {
         setToast(true);
         setType("success");
@@ -92,6 +154,8 @@ function BatteryDetails() {
 
       setToast(true);
       setType("error");
+
+      // Xử lý các lỗi dựa trên HTTP status code
       if (status === 400) {
         errorMsg = msg ? msg : "Bài đăng chưa được xác thực";
       } else if (status === 403) {
@@ -104,14 +168,19 @@ function BatteryDetails() {
           : "Người mua đã có hợp đồng đang hiệu lực cho bài này";
       } else if (status === 500) {
         errorMsg = msg ? msg : "Lỗi máy chủ";
+        // Redirect về login sau 2s nếu lỗi server
         setTimeout(() => navigate("/login"), 2000);
       }
       setMsg(errorMsg);
     } finally {
+      // Tự động ẩn toast sau 3s
       setTimeout(() => setToast(false), 3000);
     }
   }
 
+  // ============ RENDER UI ============
+
+  // ===== Loading State =====
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
@@ -126,11 +195,13 @@ function BatteryDetails() {
     );
   }
 
+  // ===== Main Content =====
   return (
     <div className="min-h-screen bg-white">
       <Header />
       <main className="py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* ===== BACK BUTTON ===== */}
           <div className="mb-6">
             <Link
               to="/batteries"
@@ -140,8 +211,10 @@ function BatteryDetails() {
             </Link>
           </div>
 
+          {/* ===== POST CONTENT ===== */}
           {post ? (
             (() => {
+              // Lấy VIP info để style card
               const vipInfo =
                 post.isVip && post.vipTier
                   ? getVipTierInfo(post.vipTier)
@@ -149,9 +222,11 @@ function BatteryDetails() {
 
               return (
                 <div className="bg-white shadow-lg rounded-2xl overflow-hidden">
-                  {/* Hình ảnh */}
+                  {/* ===== SECTION 1: Hình ảnh + VIP Badge ===== */}
                   <div className="relative">
+                    {/* Grid hiển thị ảnh pin: 2 cột responsive */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-100">
+                      {/* Nếu có ảnh: map và hiển thị từng ảnh */}
                       {post.image && post.image.length > 0 ? (
                         post.image.map((img, index) => (
                           <img
@@ -162,6 +237,7 @@ function BatteryDetails() {
                           />
                         ))
                       ) : (
+                        // Nếu không có ảnh: hiển thị ảnh placeholder
                         <img
                           src="https://afdc.energy.gov/files/u/publication/ev_battery_closeup.jpg"
                           alt={post.title}
@@ -169,6 +245,8 @@ function BatteryDetails() {
                         />
                       )}
                     </div>
+
+                    {/* VIP Badge overlay trên ảnh (góc trên trái) */}
                     {vipInfo && (
                       <div
                         className={`absolute top-8 left-8 px-4 py-2 rounded-full text-sm font-semibold shadow-lg ${vipInfo.bg} ${vipInfo.color}`}
@@ -178,8 +256,9 @@ function BatteryDetails() {
                     )}
                   </div>
 
-                  {/* Thông tin chi tiết */}
+                  {/* ===== SECTION 2: Thông tin chi tiết ===== */}
                   <div className="p-8">
+                    {/* Header: Tiêu đề, Giá, Người đăng */}
                     <div className="border-b pb-6 mb-6">
                       <h1 className="text-3xl font-bold mb-3 text-gray-900">
                         {post.title}
@@ -203,21 +282,23 @@ function BatteryDetails() {
                       </div>
                     </div>
 
-                    {/* Mô tả */}
+                    {/* Mô tả chi tiết */}
                     <div className="mb-6">
                       <h2 className="text-xl font-semibold mb-3 text-gray-900">
                         Mô tả
                       </h2>
+                      {/* whitespace-pre-line để giữ line breaks */}
                       <p className="text-gray-700 whitespace-pre-line">
                         {post.content}
                       </p>
                     </div>
 
-                    {/* Thông tin pin */}
+                    {/* Thông tin kỹ thuật pin */}
                     <div className="mb-6">
                       <h2 className="text-xl font-semibold mb-4 text-gray-900">
                         Thông tin kỹ thuật pin
                       </h2>
+                      {/* Kiểm tra có ít nhất 1 field thông tin pin */}
                       {post.battery_brand ||
                       post.battery_model ||
                       post.battery_capacity ||
@@ -225,6 +306,7 @@ function BatteryDetails() {
                       post.battery_range ||
                       post.battery_condition ||
                       post.charging_time ? (
+                        /* Grid 3 cột hiển thị thông tin pin - chỉ render field có data */
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                           {post.battery_brand && (
                             <div className="bg-blue-50 p-4 rounded-lg">
@@ -298,6 +380,7 @@ function BatteryDetails() {
                           )}
                         </div>
                       ) : (
+                        /* Fallback: Không có thông tin kỹ thuật */
                         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                           <p className="text-gray-600">
                             Thông tin kỹ thuật pin chưa được cập nhật cho bài
@@ -327,9 +410,9 @@ function BatteryDetails() {
                       )}
                     </div>
 
-                    {/* Nút hành động */}
+                    {/* ===== SECTION 3: Nút hành động ===== */}
                     <div className="pt-6">
-                      <button 
+                      <button
                         onClick={handleRequest}
                         className="w-full bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors font-medium"
                       >
@@ -341,6 +424,7 @@ function BatteryDetails() {
               );
             })()
           ) : (
+            /* ===== Fallback: Không tìm thấy post ===== */
             <div className="bg-white shadow rounded-lg p-6 text-center">
               <h2 className="text-xl font-semibold mb-2">
                 Chi tiết pin không tìm thấy
@@ -361,6 +445,8 @@ function BatteryDetails() {
         </div>
       </main>
       <Footer />
+
+      {/* ===== TOAST NOTIFICATION ===== */}
       {toast && <Toast msg={msg} type={type} />}
     </div>
   );

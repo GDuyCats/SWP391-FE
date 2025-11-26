@@ -10,49 +10,126 @@ import {
 import { api } from "../services/api";
 import { validateEmail, validateUsername, validatePassword, validateForm } from "../utils/validation";
 
+/**
+ * Page Register - Trang đăng ký tài khoản mới
+ * 
+ * Route: /register
+ * 
+ * Chức năng:
+ * - Form đăng ký với email, username, password
+ * - Validation form inputs
+ * - Gọi API đăng ký
+ * - Gửi email xác thực đến user
+ * - Cho phép gửi lại email xác thực (có cooldown 60s)
+ * - Hiển thị toast notifications
+ * 
+ * State:
+ * - form: {email, username, password}
+ * - hasActiveVerifyToken: Đã gửi email verify chưa
+ * - cooldownLeft: Thời gian chờ trước khi gửi lại (60s)
+ * - errors: Validation errors
+ * 
+ * Flow:
+ * 1. User nhập thông tin + click "Tiếp tục"
+ * 2. Validate inputs
+ * 3. Gọi API POST /register
+ * 4. Server gửi email verify
+ * 5. User check email + click link verify
+ * 6. User có thể click "Gửi lại" nếu chưa nhận được email (cooldown 60s)
+ */
+
+// Hằng số thời gian cooldown (60 giây)
 const COOLDOWN_SEC = 60;
 
 function Register() {
+  // ============ STATE MANAGEMENT ============
   const [form, setForm] = useState({ email: "", username: "", password: "" });
-  const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState(null);
-  const [toastVisible, setToastVisible] = useState(false);
-  const [hasActiveVerifyToken, setHasActiveVerifyToken] = useState(false);
-  const [cooldownLeft, setCooldownLeft] = useState(0);
-  const [errors, setErrors] = useState({ email: "", username: "", password: "" });
+  const [loading, setLoading] = useState(false); // Đang gọi API
+  const [toast, setToast] = useState(null); // {type, msg}
+  const [toastVisible, setToastVisible] = useState(false); // Animation state
+  const [hasActiveVerifyToken, setHasActiveVerifyToken] = useState(false); // Đã gửi email verify chưa
+  const [cooldownLeft, setCooldownLeft] = useState(0); // Thời gian chờ còn lại (giây)
+  const [errors, setErrors] = useState({ email: "", username: "", password: "" }); // Validation errors
 
+  // ============ EFFECTS ============
+  
+  /**
+   * useEffect: Countdown timer cho cooldown
+   * - Giảm cooldownLeft mỗi giây
+   * - Cleanup interval khi component unmount
+   */
   useEffect(() => {
     if (cooldownLeft <= 0) return;
     const t = setInterval(() => setCooldownLeft((s) => s - 1), 1000);
     return () => clearInterval(t);
   }, [cooldownLeft]);
 
+  // ============ HANDLERS ============
+  
+  /**
+   * Hàm hiển thị toast notification với animation
+   * @param {string} type - 'success' hoặc 'error'
+   * @param {string} msg - Nội dung thông báo
+   * @param {number} duration - Thời gian hiển thị (ms), default 3000ms
+   */
   const showToast = (type, msg, duration = 3000) => {
     setToast({ type, msg });
     setToastVisible(true);
+    // Fade out sau duration
     setTimeout(() => {
       setToastVisible(false);
+      // Remove toast hoàn toàn sau animation
       setTimeout(() => setToast(null), 400);
     }, duration);
   };
 
+  /**
+   * Hàm xử lý khi user thay đổi input
+   * - Cập nhật form state
+   * - Xóa error message khi user bắt đầu sửa
+   */
   const handleChange = (e) => {
     const { id, value } = e.target;
     setForm((prev) => ({ ...prev, [id]: value }));
     
-    // Clear error when user types
+    // Clear error khi user types
     if (errors[id]) {
       setErrors((prev) => ({ ...prev, [id]: "" }));
     }
   };
 
+  /**
+   * Hàm xử lý đăng ký hoặc gửi lại email verify
+   * 
+   * Flow có 2 trường hợp:
+   * 
+   * TRƯỜNG HỢP 1: Đăng ký lần đầu (hasActiveVerifyToken = false)
+   * 1. Validate form inputs
+   * 2. Gọi API POST /register
+   * 3. Server gửi email verify
+   * 4. Set hasActiveVerifyToken = true
+   * 5. Bắt đầu cooldown 60s
+   * 
+   * TRƯỜNG HỢP 2: Gửi lại email verify (hasActiveVerifyToken = true)
+   * 1. Không cần validate (đã validate trước đó)
+   * 2. Gọi API POST /resend-verify
+   * 3. Server gửi lại email verify
+   * 4. Reset cooldown 60s
+   * 
+   * Error Handling:
+   * - 400: Email đã verify hoặc thiếu field
+   * - 409: Email đã tồn tại
+   * - 429: Gửi quá nhiều request (rate limit)
+   * - Network Error: CORS hoặc API down
+   */
   const handleRegisterOrResend = async () => {
+    // Kiểm tra cooldown
     if (cooldownLeft > 0) {
       showToast("error", `Vui lòng đợi ${cooldownLeft}s`);
       return;
     }
 
-    // Validate form only for first registration
+    // ===== BƯỚC 1: Validate form (chỉ cho lần đầu đăng ký) =====
     if (!hasActiveVerifyToken) {
       const validation = validateForm({
         email: validateEmail(form.email),
@@ -70,27 +147,30 @@ function Register() {
       setLoading(true);
 
       if (!hasActiveVerifyToken) {
-        // Đăng ký lần đầu
+        // ===== TRƯỜNG HỢP 1: Đăng ký lần đầu =====
         const resp = await api.post("/register", form);
 
+        // Đánh dấu đã gửi email verify
         setHasActiveVerifyToken(true);
         showToast("success", "Vui lòng xác thực tài khoản qua email của bạn.");
-        setCooldownLeft(COOLDOWN_SEC);
+        setCooldownLeft(COOLDOWN_SEC); // Bắt đầu cooldown 60s
       } else {
-        // Resend verification
+        // ===== TRƯỜNG HỢP 2: Gửi lại email verify =====
         const resp = await api.post("/resend-verify", { email: form.email });
 
         showToast(
           "success",
           "Email xác thực đã được gửi lại. Vui lòng kiểm tra hộp thư."
         );
-        setCooldownLeft(COOLDOWN_SEC);
+        setCooldownLeft(COOLDOWN_SEC); // Reset cooldown 60s
       }
     } catch (error) {
+      // ===== Xử lý các lỗi =====
       const status = error?.response?.status;
       const msg = error?.response?.data?.message;
 
       if (status === 400 && msg === "Email is already verified") {
+        // Email đã được verify trước đó
         showToast(
           "success",
           "Tài khoản của bạn đã được xác thực. Vui lòng đăng nhập."
@@ -99,14 +179,19 @@ function Register() {
         status === 400 &&
         msg?.startsWith?.("Missing required field")
       ) {
+        // Thiếu field bắt buộc
         showToast("error", msg);
       } else if (status === 409) {
+        // Email đã tồn tại trong database
         showToast("error", "Email đã tồn tại");
       } else if (status === 429) {
+        // Rate limit: gửi quá nhiều request
         showToast("error", msg || "Vui lòng đợi trước khi yêu cầu email khác.");
       } else if (error?.message?.includes?.("Network Error")) {
+        // CORS hoặc API down
         showToast("error", "Lỗi mạng. Vui lòng kiểm tra kết nối.");
       } else {
+        // Các lỗi khác
         showToast(
           "error",
           msg ||
@@ -118,6 +203,7 @@ function Register() {
     }
   };
 
+  // Button disabled khi đang loading hoặc trong cooldown
   const isDisabled = loading || cooldownLeft > 0;
 
   return (
