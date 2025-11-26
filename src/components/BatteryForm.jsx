@@ -100,6 +100,7 @@ export default function BatteryForm() {
    * - Cập nhật formData
    * - Xóa error message nếu có
    * - Tự động xóa khoảng trống cho số điện thoại
+   * - Giới hạn giá bán tối đa 12 số
    *
    * @param {Event} e - Event object từ input
    */
@@ -110,6 +111,12 @@ export default function BatteryForm() {
     let processedValue = value;
     if (name === "phone") {
       processedValue = value.replace(/\s/g, ""); // Xóa tất cả khoảng trắng
+    }
+
+    // Giới hạn giá bán tối đa 12 số
+    if (name === "price") {
+      // Chỉ cho phép nhập số và giới hạn 12 ký tự
+      processedValue = value.replace(/\D/g, "").slice(0, 12);
     }
 
     // Cập nhật formData với giá trị mới
